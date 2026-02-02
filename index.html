@@ -3,22 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Stock Ticker</title>
+    <title>Stock Ticker with Alerts</title>
     <style>
         :root { --bg: #ffffff; --panel: #f4f4f4; --text: #000; --border: #ddd; }
         [data-theme="dark"] { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
+        
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: 0.3s; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Ticker Styling */
         #ticker-wrap { width: 100%; background: var(--bg); padding: 15px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        .stock-item { margin-right: 60px; font-size: 24px; }
-        .up { color: #00ff00; } .down { color: #ff4444; }
+        
+        /* Flash Animation for Alerts */
+        @keyframes alert-flash {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .stock-item { margin-right: 60px; font-size: 24px; display: inline-block; }
+        .up { color: #00ff00; } 
+        .down { color: #ff4444; }
+        
+        /* Alert Class applied via JS */
+        .price-alert { animation: alert-flash 1s infinite ease-in-out; border: 1px solid gold; padding: 2px 8px; border-radius: 4px; }
+
+        /* Controls */
         #controls { padding: 20px; flex-grow: 1; overflow-y: auto; }
         .card { background: var(--panel); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
         input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin: 5px 0; }
         input[type="text"] { background: var(--bg); color: var(--text); width: calc(100% - 110px); }
         button { cursor: pointer; font-weight: bold; background: #00ff00; color: #000; }
-        .settings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
+        .settings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 11px; }
         .stock-tag { display: inline-flex; justify-content: space-between; background: var(--border); padding: 8px; border-radius: 4px; margin: 5px; width: 110px; }
         .remove { color: #ff4444; cursor: pointer; font-weight: bold; }
     </style>
@@ -26,19 +43,19 @@
 <body data-theme="dark">
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Connecting to Markets...</div>
+    <div id="ticker-move">Monitoring Market Volatility...</div>
 </div>
 
 <div id="controls">
     <div class="card">
-        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA, TSLA)">
+        <input type="text" id="new-stock" placeholder="Add Symbol (e.g. NVDA, RIVN)">
         <button onclick="addStock()">ADD</button>
     </div>
     <div class="card settings">
         <div>Size (px)<br><input type="number" id="f-size" value="24" oninput="updateUI()"></div>
         <div>Color<br><input type="color" id="f-color" value="#00ff00" oninput="updateUI()"></div>
         <div>Speed (s)<br><input type="number" id="f-speed" value="25" oninput="updateUI()"></div>
-        <div>Theme<br><button onclick="toggleTheme()" style="width:100%; background:#555; color:#fff;">🌓 Theme</button></div>
+        <div>Theme<br><button onclick="toggleTheme()" style="width:100%; background:#555; color:#fff; border:none;">🌓 Toggle</button></div>
     </div>
     <div id="active-list"></div>
 </div>
@@ -46,8 +63,6 @@
 <script>
     const API_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || [];
-    
-    // Using ETF proxies because indices (^DJI, etc) are restricted on free tier
     const proxies = { 'DIA': 'DOW JONES', 'QQQ': 'NASDAQ', 'SPY': 'S&P 500' };
 
     function toggleTheme() {
@@ -78,10 +93,18 @@
                 const percent = data.dp.toFixed(2);
                 const colorClass = data.d >= 0 ? 'up' : 'down';
                 const sign = data.d >= 0 ? '+' : '';
-                html += `<span class="stock-item">${label} $${data.c.toFixed(2)} <span class="${colorClass}">${sign}${change} (${sign}${percent}%)</span></span>`;
+                
+                // Alert logic: If percent move > 2% (absolute value)
+                const isVolatile = Math.abs(data.dp) >= 2.0;
+                const alertClass = isVolatile ? 'price-alert' : '';
+
+                html += `<span class="stock-item ${alertClass}">
+                            ${label} $${data.c.toFixed(2)} 
+                            <span class="${colorClass}">${sign}${change} (${sign}${percent}%)</span>
+                         </span>`;
             }
         }
-        move.innerHTML = html || "Add stocks to begin";
+        move.innerHTML = html || "Add stocks to see alerts";
         renderList();
     }
 
@@ -115,7 +138,7 @@
         move.style.animationDuration = document.getElementById('f-speed').value + 's';
     }
 
-    setInterval(refreshTicker, 60000);
+    setInterval(refreshTicker, 60000); // 60s refresh
     refreshTicker();
     updateUI();
 </script>
