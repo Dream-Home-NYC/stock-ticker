@@ -3,112 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Stock Ticker - Pro</title>
+    <title>Pro Stock Ticker</title>
     <style>
-        :root { --bg: #000; --panel: #1a1a1a; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #121212; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        
+        /* Theme Variables */
+        :root {
+            --bg: #ffffff;
+            --panel: #f4f4f4;
+            --text: #000000;
+            --border: #ddd;
+        }
+
+        [data-theme="dark"] {
+            --bg: #000000;
+            --panel: #1a1a1a;
+            --text: #ffffff;
+            --border: #333;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            transition: background 0.3s, color 0.3s;
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
         /* Ticker Styling */
-        #ticker-wrap { width: 100%; background: var(--bg); padding: 15px 0; border-bottom: 2px solid #333; overflow: hidden; white-space: nowrap; }
+        #ticker-wrap { width: 100%; background: var(--bg); padding: 15px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
         .stock-item { margin-right: 60px; font-size: 24px; }
-        .up { color: #00ff00; } /* Green for positive */
-        .down { color: #ff4444; } /* Red for negative */
-        .price { color: white; margin-left: 8px; }
+        .up { color: #00ff00; } 
+        .down { color: #ff4444; } 
         
         /* Controls Styling */
         #controls { padding: 20px; flex-grow: 1; overflow-y: auto; }
-        .card { background: var(--panel); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; }
-        input, button { padding: 10px; border-radius: 4px; border: none; margin: 5px 0; }
-        input[type="text"] { background: #333; color: white; width: calc(100% - 110px); }
-        button { cursor: pointer; font-weight: bold; background: #00ff00; color: black; transition: 0.2s; }
-        button:hover { background: #00cc00; }
-        .settings { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 12px; color: #aaa; }
-        .stock-tag { display: inline-flex; justify-content: space-between; background: #333; padding: 8px 12px; border-radius: 4px; margin: 5px; width: 120px; border: 1px solid #444; }
-        .remove { color: #ff4444; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .card { background: var(--panel); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
+        input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin: 5px 0; }
+        input[type="text"] { background: var(--bg); color: var(--text); width: calc(100% - 110px); }
+        button { cursor: pointer; font-weight: bold; background: #00ff00; color: black; }
+        
+        .settings { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 12px; }
+        .stock-tag { display: inline-flex; justify-content: space-between; background: var(--border); padding: 8px; border-radius: 4px; margin: 5px; width: 110px; }
+        .remove { color: #ff4444; cursor: pointer; font-weight: bold; }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Fetching Market Data...</div>
+    <div id="ticker-move">Connecting to Markets...</div>
 </div>
 
 <div id="controls">
     <div class="card">
-        <input type="text" id="new-stock" placeholder="Add Symbol (e.g. AAPL, BTC-USD)">
-        <button onclick="addStock()">ADD STOCK</button>
+        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA, BTC-USD)">
+        <button onclick="addStock()">ADD</button>
     </div>
 
     <div class="card settings">
-        <div>Font Size (px)<br><input type="number" id="f-size" value="24" oninput="updateUI()"></div>
-        <div>Base Color<br><input type="color" id="f-color" value="#ffffff" oninput="updateUI()"></div>
+        <div>Size (px)<br><input type="number" id="f-size" value="24" oninput="updateUI()"></div>
+        <div>Color<br><input type="color" id="f-color" value="#00ff00" oninput="updateUI()"></div>
         <div>Speed (s)<br><input type="number" id="f-speed" value="25" oninput="updateUI()"></div>
+        <div>Theme<br><button onclick="toggleTheme()" style="width:100%; background:#888; color:white;">🌓 Toggle</button></div>
     </div>
 
-    <h4 style="color: #666; margin-left: 5px;">User Portfolio</h4>
     <div id="active-list"></div>
 </div>
 
 <script>
     const API_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
-    // User stocks from local storage
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || [];
-    
-    // Fixed Major Indices
-    const indices = { 
-        '^DJI': 'DOW JONES', 
-        '^IXIC': 'NASDAQ', 
-        '^GSPC': 'S&P 500' 
-    };
+    const indices = { '^DJI': 'DOW', '^IXIC': 'NASDAQ', '^GSPC': 'S&P 500' };
+
+    // Theme Logic
+    function toggleTheme() {
+        const current = document.body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
 
     async function fetchData(symbol) {
         try {
             const resp = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
             const data = await resp.json();
-            if (!data.c) return null;
-            return {
-                price: data.c.toLocaleString(undefined, {minimumFractionDigits: 2}),
-                change: data.d.toFixed(2),
-                percent: data.dp.toFixed(2)
-            };
+            return data.c ? data : null;
         } catch (e) { return null; }
     }
 
     async function refreshTicker() {
         const move = document.getElementById('ticker-move');
-        const indexKeys = Object.keys(indices);
-        const allSymbols = [...indexKeys, ...userStocks];
+        const allSymbols = [...Object.keys(indices), ...userStocks];
         let html = '';
 
         for (let sym of allSymbols) {
             const data = await fetchData(sym);
             if (data) {
                 const label = indices[sym] || sym;
-                const isPositive = parseFloat(data.change) >= 0;
-                const colorClass = isPositive ? 'up' : 'down';
-                const sign = isPositive ? '+' : '';
+                const change = data.d.toFixed(2);
+                const percent = data.dp.toFixed(2);
+                const colorClass = data.d >= 0 ? 'up' : 'down';
+                const sign = data.d >= 0 ? '+' : '';
                 
-                html += `
-                    <span class="stock-item">
-                        ${label} 
-                        <span class="price">$${data.price}</span> 
-                        <span class="${colorClass}"> 
-                            ${sign}${data.change} (${sign}${data.percent}%) 
-                        </span>
-                    </span>`;
+                html += `<span class="stock-item">${label} $${data.c.toFixed(2)} <span class="${colorClass}">${sign}${change} (${sign}${percent}%)</span></span>`;
             }
         }
         move.innerHTML = html;
-        renderPortfolioList();
+        renderList();
     }
 
     function addStock() {
         const input = document.getElementById('new-stock');
         const val = input.value.toUpperCase().trim();
-        if (val && !userStocks.includes(val) && !indices[val]) {
+        if (val && !userStocks.includes(val)) {
             userStocks.push(val);
             localStorage.setItem('stocks', JSON.stringify(userStocks));
             input.value = '';
@@ -122,13 +138,9 @@
         refreshTicker();
     }
 
-    function renderPortfolioList() {
-        const list = document.getElementById('active-list');
-        list.innerHTML = userStocks.map(s => `
-            <div class="stock-tag">
-                <span>${s}</span>
-                <span class="remove" onclick="removeStock('${s}')">×</span>
-            </div>
+    function renderList() {
+        document.getElementById('active-list').innerHTML = userStocks.map(s => `
+            <div class="stock-tag"><span>${s}</span><span class="remove" onclick="removeStock('${s}')">×</span></div>
         `).join('');
     }
 
@@ -139,11 +151,9 @@
         move.style.animationDuration = document.getElementById('f-speed').value + 's';
     }
 
-    // Refresh every 60 seconds to stay within free API limits
     setInterval(refreshTicker, 60000);
     refreshTicker();
     updateUI();
 </script>
-
 </body>
 </html>
