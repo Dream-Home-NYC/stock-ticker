@@ -5,55 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Stock Ticker</title>
     <style>
-        /* Theme Variables */
-        :root {
-            --bg: #ffffff;
-            --panel: #f4f4f4;
-            --text: #000000;
-            --border: #ddd;
-        }
-
-        [data-theme="dark"] {
-            --bg: #000000;
-            --panel: #1a1a1a;
-            --text: #ffffff;
-            --border: #333;
-        }
-
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            transition: background 0.3s, color 0.3s;
-            overflow: hidden; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        /* Ticker Styling */
+        :root { --bg: #ffffff; --panel: #f4f4f4; --text: #000; --border: #ddd; }
+        [data-theme="dark"] { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: 0.3s; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         #ticker-wrap { width: 100%; background: var(--bg); padding: 15px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        
         .stock-item { margin-right: 60px; font-size: 24px; }
-        .up { color: #00ff00; } 
-        .down { color: #ff4444; } 
-        
-        /* Controls Styling */
+        .up { color: #00ff00; } .down { color: #ff4444; }
         #controls { padding: 20px; flex-grow: 1; overflow-y: auto; }
         .card { background: var(--panel); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
         input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin: 5px 0; }
         input[type="text"] { background: var(--bg); color: var(--text); width: calc(100% - 110px); }
-        button { cursor: pointer; font-weight: bold; background: #00ff00; color: black; }
-        
-        .settings { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 12px; }
+        button { cursor: pointer; font-weight: bold; background: #00ff00; color: #000; }
+        .settings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
         .stock-tag { display: inline-flex; justify-content: space-between; background: var(--border); padding: 8px; border-radius: 4px; margin: 5px; width: 110px; }
         .remove { color: #ff4444; cursor: pointer; font-weight: bold; }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark">
 
 <div id="ticker-wrap">
     <div id="ticker-move">Connecting to Markets...</div>
@@ -61,36 +31,31 @@
 
 <div id="controls">
     <div class="card">
-        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA, BTC-USD)">
+        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA, TSLA)">
         <button onclick="addStock()">ADD</button>
     </div>
-
     <div class="card settings">
         <div>Size (px)<br><input type="number" id="f-size" value="24" oninput="updateUI()"></div>
         <div>Color<br><input type="color" id="f-color" value="#00ff00" oninput="updateUI()"></div>
         <div>Speed (s)<br><input type="number" id="f-speed" value="25" oninput="updateUI()"></div>
-        <div>Theme<br><button onclick="toggleTheme()" style="width:100%; background:#888; color:white;">🌓 Toggle</button></div>
+        <div>Theme<br><button onclick="toggleTheme()" style="width:100%; background:#555; color:#fff;">🌓 Theme</button></div>
     </div>
-
     <div id="active-list"></div>
 </div>
 
 <script>
     const API_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || [];
-    const indices = { '^DJI': 'DOW', '^IXIC': 'NASDAQ', '^GSPC': 'S&P 500' };
+    
+    // Using ETF proxies because indices (^DJI, etc) are restricted on free tier
+    const proxies = { 'DIA': 'DOW JONES', 'QQQ': 'NASDAQ', 'SPY': 'S&P 500' };
 
-    // Theme Logic
     function toggleTheme() {
-        const current = document.body.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
+        const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.body.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
     }
-
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.body.setAttribute('data-theme', savedTheme);
+    document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
     async function fetchData(symbol) {
         try {
@@ -102,29 +67,28 @@
 
     async function refreshTicker() {
         const move = document.getElementById('ticker-move');
-        const allSymbols = [...Object.keys(indices), ...userStocks];
+        const allSymbols = [...Object.keys(proxies), ...userStocks];
         let html = '';
 
         for (let sym of allSymbols) {
             const data = await fetchData(sym);
             if (data) {
-                const label = indices[sym] || sym;
+                const label = proxies[sym] || sym;
                 const change = data.d.toFixed(2);
                 const percent = data.dp.toFixed(2);
                 const colorClass = data.d >= 0 ? 'up' : 'down';
                 const sign = data.d >= 0 ? '+' : '';
-                
                 html += `<span class="stock-item">${label} $${data.c.toFixed(2)} <span class="${colorClass}">${sign}${change} (${sign}${percent}%)</span></span>`;
             }
         }
-        move.innerHTML = html;
+        move.innerHTML = html || "Add stocks to begin";
         renderList();
     }
 
     function addStock() {
         const input = document.getElementById('new-stock');
         const val = input.value.toUpperCase().trim();
-        if (val && !userStocks.includes(val)) {
+        if (val && !userStocks.includes(val) && !proxies[val]) {
             userStocks.push(val);
             localStorage.setItem('stocks', JSON.stringify(userStocks));
             input.value = '';
