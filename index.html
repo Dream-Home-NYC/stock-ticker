@@ -9,14 +9,30 @@
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        #ticker-wrap { width: 100%; background: var(--bg); padding: 15px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
-        #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 35s linear infinite; font-weight: bold; }
+        #ticker-wrap { 
+            width: 100%; 
+            background: var(--bg); 
+            padding: 10px 0; 
+            border-bottom: 2px solid var(--border); 
+            overflow: hidden; 
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+        
+        #ticker-move { 
+            display: inline-block; 
+            padding-left: 100%; 
+            animation: scroll 35s linear infinite; 
+            line-height: 1;
+        }
+        
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
         @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .stock-item { margin-right: 60px; display: inline-block; vertical-align: middle; }
         .up { color: #00ff00; } .down { color: #ff4444; }
-        .alert { animation: breathe 4s infinite ease-in-out; border-bottom: 2px solid #ff9800; }
+        .alert { animation: breathe 4s infinite ease-in-out; border-bottom: 3px solid #ff9800; }
 
         #controls { padding: 20px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; position: relative; }
         .hidden { opacity: 0 !important; pointer-events: none; }
@@ -24,21 +40,25 @@
         input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
         
+        .toggle-btn { background: #444; min-width: 80px; }
+        .toggle-btn.active { background: #00ff00; color: #000; }
+        
         #update-time { position: absolute; bottom: 10px; right: 20px; font-size: 11px; color: #666; font-family: monospace; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Syncing Markets...</div>
+    <div id="ticker-move">Syncing Dow, Nasdaq, S&P...</div>
 </div>
 
 <div id="controls">
     <div class="card">
         <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA)">
         <button onclick="addStock()">ADD</button>
-        <label>Size: <input type="number" id="f-size" value="24" style="width:60px" oninput="updateUI(true)"></label>
-        <label>Speed: <input type="number" id="f-speed" value="35" style="width:60px" oninput="updateUI(true)"></label>
+        <label>Size: <input type="number" id="f-size" value="24" style="width:70px" oninput="updateUI(true)"></label>
+        <label>Speed: <input type="number" id="f-speed" value="35" style="width:70px" oninput="updateUI(true)"></label>
+        <button id="bold-btn" class="toggle-btn" onclick="toggleBold()">BOLD</button>
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
     <div id="active-list" style="margin-top:10px"></div>
@@ -48,11 +68,8 @@
 <script>
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
+    let isBold = localStorage.getItem('tickerBold') === 'true';
     
-    // Load Saved UI Settings
-    let savedFontSize = localStorage.getItem('tickerFontSize') || '24';
-    let savedSpeed = localStorage.getItem('tickerSpeed') || '35';
-
     const indices = [
         { sym: '^DJI', name: 'DOW JONES' },
         { sym: '^IXIC', name: 'NASDAQ' },
@@ -99,7 +116,7 @@
         document.getElementById('update-time').innerText = `Last Update: ${now.toLocaleTimeString()}`;
         
         renderTags();
-        updateUI(false); // Apply saved settings to new content
+        updateUI(false); 
     }
 
     function formatItem(label, d) {
@@ -111,6 +128,7 @@
         </span>`;
     }
 
+    // Timer Logic
     let hideTimeout;
     function resetTimer() {
         document.getElementById('controls').classList.remove('hidden');
@@ -144,31 +162,43 @@
         `).join('');
     }
 
+    function toggleBold() {
+        isBold = !isBold;
+        localStorage.setItem('tickerBold', isBold);
+        updateUI(true);
+    }
+
     function updateUI(shouldSave) {
-        const m = document.getElementById('ticker-move');
+        const move = document.getElementById('ticker-move');
         const sizeInput = document.getElementById('f-size');
         const speedInput = document.getElementById('f-speed');
+        const boldBtn = document.getElementById('bold-btn');
 
-        // If loading from memory, update the input values first
         if (!shouldSave) {
             sizeInput.value = localStorage.getItem('tickerFontSize') || '24';
             speedInput.value = localStorage.getItem('tickerSpeed') || '35';
         }
 
-        const fontSize = sizeInput.value;
-        const speed = speedInput.value;
+        const fSize = sizeInput.value + 'px';
+        const fSpeed = speedInput.value + 's';
+        const fWeight = isBold ? 'bold' : 'normal';
 
-        // Apply styles
-        m.style.fontSize = fontSize + 'px';
-        m.style.animationDuration = speed + 's';
-        document.querySelectorAll('.stock-item').forEach(item => {
-            item.style.fontSize = fontSize + 'px';
+        // Apply to everything
+        move.style.fontSize = fSize;
+        move.style.animationDuration = fSpeed;
+        move.style.fontWeight = fWeight;
+        
+        if (isBold) boldBtn.classList.add('active');
+        else boldBtn.classList.remove('active');
+
+        document.querySelectorAll('.stock-item').forEach(el => {
+            el.style.fontSize = fSize;
+            el.style.fontWeight = fWeight;
         });
 
-        // Save to memory if triggered by user input
         if (shouldSave) {
-            localStorage.setItem('tickerFontSize', fontSize);
-            localStorage.setItem('tickerSpeed', speed);
+            localStorage.setItem('tickerFontSize', sizeInput.value);
+            localStorage.setItem('tickerSpeed', speedInput.value);
         }
     }
 
@@ -178,11 +208,7 @@
         localStorage.setItem('theme', t);
     }
     
-    // Initial Setup
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-    document.getElementById('f-size').value = savedFontSize;
-    document.getElementById('f-speed').value = savedSpeed;
-    
     setInterval(refreshTicker, 60000);
     refreshTicker();
 </script>
