@@ -3,28 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Stock Ticker</title>
+    <title>Stock Ticker Pro</title>
     <style>
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
-        
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Indices Header */
         #indices-header { height: 46px; width: 100%; border-bottom: 1px solid var(--border); overflow: hidden; }
 
-        /* Ticker Banner */
         #ticker-wrap { width: 100%; background: var(--bg); padding: 12px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 30s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
-        /* Pulse Alert */
-        @keyframes subtle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slow-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .stock-item { margin-right: 60px; font-size: 22px; display: inline-block; vertical-align: middle; }
         .up { color: #22ab94; } .down { color: #f23645; }
-        .price-alert { animation: subtle-pulse 4s infinite ease-in-out; color: #ff9800 !important; }
+        .price-alert { animation: slow-breathe 4s infinite ease-in-out; color: #ff9800 !important; }
 
-        /* Auto-Hide Panel */
         #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; }
         .hidden { opacity: 0 !important; pointer-events: none; }
         .card { background: var(--panel); padding: 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -53,7 +48,7 @@
 </div>
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Connecting to Markets...</div>
+    <div id="ticker-move">Refreshing Portfolio Data...</div>
 </div>
 
 <div id="controls">
