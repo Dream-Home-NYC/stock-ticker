@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Stock Ticker</title>
+    <title>Pro Stock Ticker</title>
     <style>
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
@@ -18,17 +18,19 @@
         .up { color: #00ff00; } .down { color: #ff4444; }
         .alert { animation: breathe 4s infinite ease-in-out; border-bottom: 2px solid #ff9800; }
 
-        #controls { padding: 20px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; }
+        #controls { padding: 20px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; position: relative; }
         .hidden { opacity: 0 !important; pointer-events: none; }
         .card { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
+        
+        #update-time { position: absolute; bottom: 10px; right: 20px; font-size: 11px; color: #666; font-family: monospace; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Loading Indices & Portfolio...</div>
+    <div id="ticker-move">Syncing Markets...</div>
 </div>
 
 <div id="controls">
@@ -40,14 +42,19 @@
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
     <div id="active-list" style="margin-top:10px"></div>
+    <div id="update-time">Last Update: --:--:--</div>
 </div>
 
 <script>
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
-    const indices = { '^GSPC': 'S&P 500', '^IXIC': 'NASDAQ', '^DJI': 'DOW' };
+    
+    const indices = [
+        { sym: '^DJI', name: 'DOW JONES' },
+        { sym: '^IXIC', name: 'NASDAQ' },
+        { sym: '^GSPC', name: 'S&P 500' }
+    ];
 
-    // Proxy to bypass CORS restrictions
     const PROXY_URL = 'https://api.allorigins.win/get?url=';
 
     async function fetchYahoo(symbol) {
@@ -56,17 +63,9 @@
             const res = await fetch(`${PROXY_URL}${targetUrl}`);
             const jsonWrapper = await res.json();
             const data = JSON.parse(jsonWrapper.contents);
-            
             const meta = data.chart.result[0].meta;
-            const price = meta.regularMarketPrice;
-            const prevClose = meta.previousClose;
-            const change = price - prevClose;
-            const percent = (change / prevClose) * 100;
-            return { price, change, percent };
-        } catch (e) { 
-            console.error("Yahoo Fetch Error:", e);
-            return null; 
-        }
+            return { price: meta.regularMarketPrice, change: meta.regularMarketPrice - meta.previousClose, percent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100 };
+        } catch (e) { return null; }
     }
 
     async function fetchFinnhub(symbol) {
@@ -81,19 +80,22 @@
         const move = document.getElementById('ticker-move');
         let html = '';
 
-        // 1. Fetch Indices (Yahoo via Proxy)
-        for (const [sym, name] of Object.entries(indices)) {
-            const d = await fetchYahoo(sym);
-            if (d) html += formatItem(name, d);
+        for (const index of indices) {
+            const d = await fetchYahoo(index.sym);
+            if (d) html += formatItem(index.name, d);
         }
 
-        // 2. Fetch Portfolio (Finnhub)
         for (const sym of userStocks) {
             const d = await fetchFinnhub(sym);
             if (d) html += formatItem(sym, d);
         }
 
         move.innerHTML = html || "Updating Market Data...";
+        
+        // Update Timestamp
+        const now = new Date();
+        document.getElementById('update-time').innerText = `Last Update: ${now.toLocaleTimeString()}`;
+        
         renderTags();
     }
 
@@ -106,7 +108,6 @@
         </span>`;
     }
 
-    // --- Interaction Logic ---
     let hideTimeout;
     function resetTimer() {
         document.getElementById('controls').classList.remove('hidden');
@@ -153,7 +154,7 @@
     }
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
-    setInterval(refreshTicker, 60000); // Auto-refresh once per minute
+    setInterval(refreshTicker, 60000);
     refreshTicker();
     updateUI();
 </script>
