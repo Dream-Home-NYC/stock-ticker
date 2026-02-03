@@ -14,7 +14,7 @@
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
         @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .stock-item { margin-right: 60px; font-size: 24px; display: inline-block; vertical-align: middle; }
+        .stock-item { margin-right: 60px; display: inline-block; vertical-align: middle; }
         .up { color: #00ff00; } .down { color: #ff4444; }
         .alert { animation: breathe 4s infinite ease-in-out; border-bottom: 2px solid #ff9800; }
 
@@ -37,8 +37,8 @@
     <div class="card">
         <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA)">
         <button onclick="addStock()">ADD</button>
-        <label>Size: <input type="number" id="f-size" value="24" style="width:50px" oninput="updateUI()"></label>
-        <label>Speed: <input type="number" id="f-speed" value="35" style="width:50px" oninput="updateUI()"></label>
+        <label>Size: <input type="number" id="f-size" value="24" style="width:60px" oninput="updateUI(true)"></label>
+        <label>Speed: <input type="number" id="f-speed" value="35" style="width:60px" oninput="updateUI(true)"></label>
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
     <div id="active-list" style="margin-top:10px"></div>
@@ -49,6 +49,10 @@
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
     
+    // Load Saved UI Settings
+    let savedFontSize = localStorage.getItem('tickerFontSize') || '24';
+    let savedSpeed = localStorage.getItem('tickerSpeed') || '35';
+
     const indices = [
         { sym: '^DJI', name: 'DOW JONES' },
         { sym: '^IXIC', name: 'NASDAQ' },
@@ -91,12 +95,11 @@
         }
 
         move.innerHTML = html || "Updating Market Data...";
-        
-        // Update Timestamp
         const now = new Date();
         document.getElementById('update-time').innerText = `Last Update: ${now.toLocaleTimeString()}`;
         
         renderTags();
+        updateUI(false); // Apply saved settings to new content
     }
 
     function formatItem(label, d) {
@@ -141,10 +144,32 @@
         `).join('');
     }
 
-    function updateUI() {
+    function updateUI(shouldSave) {
         const m = document.getElementById('ticker-move');
-        m.style.fontSize = document.getElementById('f-size').value + 'px';
-        m.style.animationDuration = document.getElementById('f-speed').value + 's';
+        const sizeInput = document.getElementById('f-size');
+        const speedInput = document.getElementById('f-speed');
+
+        // If loading from memory, update the input values first
+        if (!shouldSave) {
+            sizeInput.value = localStorage.getItem('tickerFontSize') || '24';
+            speedInput.value = localStorage.getItem('tickerSpeed') || '35';
+        }
+
+        const fontSize = sizeInput.value;
+        const speed = speedInput.value;
+
+        // Apply styles
+        m.style.fontSize = fontSize + 'px';
+        m.style.animationDuration = speed + 's';
+        document.querySelectorAll('.stock-item').forEach(item => {
+            item.style.fontSize = fontSize + 'px';
+        });
+
+        // Save to memory if triggered by user input
+        if (shouldSave) {
+            localStorage.setItem('tickerFontSize', fontSize);
+            localStorage.setItem('tickerSpeed', speed);
+        }
     }
 
     function toggleTheme() {
@@ -152,11 +177,14 @@
         document.body.setAttribute('data-theme', t);
         localStorage.setItem('theme', t);
     }
+    
+    // Initial Setup
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-
+    document.getElementById('f-size').value = savedFontSize;
+    document.getElementById('f-speed').value = savedSpeed;
+    
     setInterval(refreshTicker, 60000);
     refreshTicker();
-    updateUI();
 </script>
 </body>
 </html>
