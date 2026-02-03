@@ -18,15 +18,23 @@
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 30s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
-        /* Subtler Alert Pulse */
+        /* Subtle Pulse Alert */
         @keyframes subtle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
         .stock-item { margin-right: 60px; font-size: 22px; display: inline-block; vertical-align: middle; }
         .up { color: #22ab94; } .down { color: #f23645; }
         .price-alert { animation: subtle-pulse 4s infinite ease-in-out; color: #ff9800 !important; }
 
-        /* Controls Panel */
-        #controls { padding: 15px; flex-grow: 1; overflow-y: auto; font-size: 14px; }
+        /* Controls Panel with Auto-Hide */
+        #controls { 
+            padding: 15px; 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            font-size: 14px; 
+            transition: opacity 0.5s ease-in-out;
+            opacity: 1;
+        }
+        .hidden { opacity: 0 !important; pointer-events: none; }
+
         .card { background: var(--panel); padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; padding: 8px 15px; }
@@ -65,11 +73,28 @@
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
     <div id="active-list"></div>
+    <p style="color: #666; font-size: 10px;">Controls will hide after 10s of inactivity. Tap anywhere to show.</p>
 </div>
 
 <script>
     const API_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
+    let hideTimeout;
+
+    // Auto-Hide Logic
+    function resetHideTimer() {
+        const controls = document.getElementById('controls');
+        controls.classList.remove('hidden');
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            controls.classList.add('hidden');
+        }, 10000); // 10 seconds
+    }
+
+    window.addEventListener('mousemove', resetHideTimer);
+    window.addEventListener('click', resetHideTimer);
+    window.addEventListener('touchstart', resetHideTimer);
+    resetHideTimer();
 
     function toggleTheme() {
         const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
