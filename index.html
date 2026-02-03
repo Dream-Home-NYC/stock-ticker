@@ -3,61 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Stock Ticker</title>
+    <title>Triple-Banner Market Command</title>
     <style>
-        :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
+        :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; --up: #00ff00; --down: #ff4444; --news: #00d4ff; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
+        
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        #ticker-wrap { 
-            width: 100%; 
-            background: var(--bg); 
-            padding: 10px 0; 
-            border-bottom: 2px solid var(--border); 
-            overflow: hidden; 
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-        }
-        
-        #ticker-move { 
-            display: inline-block; 
-            padding-left: 100%; 
-            animation: scroll 35s linear infinite; 
-            line-height: 1;
-        }
-        
+        /* Ticker Sections */
+        .ticker-section { width: 100%; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--bg); }
+        #top-banner { padding: 6px 0; border-bottom: 2px solid #444; font-size: 0.9em; }
+        #mid-banner { padding: 10px 0; border-bottom: 2px solid var(--border); }
+        #news-banner { padding: 6px 0; background: #050505; border-bottom: 2px solid var(--news); }
+
+        .scroller { display: inline-block; padding-left: 100%; animation: scroll linear infinite; font-weight: bold; line-height: 1.2; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
-        @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .stock-item { margin-right: 60px; display: inline-block; vertical-align: middle; }
-        .up { color: #00ff00; } .down { color: #ff4444; }
-        .alert { animation: breathe 4s infinite ease-in-out; border-bottom: 3px solid #ff9800; }
-
-        #controls { padding: 20px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; position: relative; }
-        .hidden { opacity: 0 !important; pointer-events: none; }
-        .card { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        input, button { padding: 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-        button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
+        .news-item { margin-right: 100px; color: var(--news); font-style: italic; display: inline-block; }
+        .up { color: var(--up); } .down { color: var(--down); }
         
-        .toggle-btn { background: #444; min-width: 80px; }
-        .toggle-btn.active { background: #00ff00; color: #000; }
+        /* Specialized Alerts */
+        @keyframes glow { 0%, 100% { opacity: 1; filter: brightness(1); } 50% { opacity: 0.7; filter: brightness(1.5); } }
+        .alert-gold { color: #FFD700 !important; animation: glow 2s infinite; text-shadow: 0 0 5px #FFD700; }
+        .alert-silver { color: #C0C0C0 !important; animation: glow 2s infinite; text-shadow: 0 0 5px #C0C0C0; }
+        .alert-macro { color: #ff9800 !important; animation: glow 2s infinite; }
+
+        /* Controls */
+        #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; position: relative; }
+        .hidden { opacity: 0 !important; pointer-events: none; }
+        .card { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
+        .toggle-btn.active { background: var(--up); color: #000; }
         
         #update-time { position: absolute; bottom: 10px; right: 20px; font-size: 11px; color: #666; font-family: monospace; }
     </style>
 </head>
 <body data-theme="dark">
 
-<div id="ticker-wrap">
-    <div id="ticker-move">Syncing Dow, Nasdaq, S&P...</div>
+<div id="top-banner" class="ticker-section">
+    <div id="macro-scroller" class="scroller" style="animation-duration: 50s;">Loading Macro Data...</div>
+</div>
+
+<div id="mid-banner" class="ticker-section">
+    <div id="portfolio-scroller" class="scroller" style="animation-duration: 30s;">Syncing Portfolio...</div>
+</div>
+
+<div id="news-banner" class="ticker-section">
+    <div id="news-scroller" class="scroller" style="animation-duration: 80s;">Fetching Latest Market News...</div>
 </div>
 
 <div id="controls">
     <div class="card">
-        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA)">
+        <input type="text" id="new-stock" placeholder="Add Symbol (e.g. NVDA)">
         <button onclick="addStock()">ADD</button>
-        <label>Size: <input type="number" id="f-size" value="24" style="width:70px" oninput="updateUI(true)"></label>
-        <label>Speed: <input type="number" id="f-speed" value="35" style="width:70px" oninput="updateUI(true)"></label>
+        <label>Size: <input type="number" id="f-size" value="22" style="width:55px" oninput="updateUI(true)"></label>
+        <label>Speed: <input type="number" id="f-speed" value="30" style="width:55px" oninput="updateUI(true)"></label>
         <button id="bold-btn" class="toggle-btn" onclick="toggleBold()">BOLD</button>
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
@@ -67,16 +69,16 @@
 
 <script>
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
+    const PROXY_URL = 'https://api.allorigins.win/get?url=';
+    
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
     let isBold = localStorage.getItem('tickerBold') === 'true';
-    
-    const indices = [
-        { sym: '^DJI', name: 'DOW JONES' },
-        { sym: '^IXIC', name: 'NASDAQ' },
-        { sym: '^GSPC', name: 'S&P 500' }
-    ];
 
-    const PROXY_URL = 'https://api.allorigins.win/get?url=';
+    const macroList = [
+        { sym: '^DJI', name: 'DOW' }, { sym: '^IXIC', name: 'NASDAQ' }, { sym: '^GSPC', name: 'S&P 500' },
+        { sym: 'GC=F', name: 'GOLD' }, { sym: 'SI=F', name: 'SILVER' }, { sym: 'CL=F', name: 'CRUDE OIL' },
+        { sym: 'BTC-USD', name: 'BITCOIN' }, { sym: 'ETH-USD', name: 'ETHEREUM' }
+    ];
 
     async function fetchYahoo(symbol) {
         try {
@@ -97,38 +99,63 @@
         } catch (e) { return null; }
     }
 
-    async function refreshTicker() {
-        const move = document.getElementById('ticker-move');
-        let html = '';
-
-        for (const index of indices) {
-            const d = await fetchYahoo(index.sym);
-            if (d) html += formatItem(index.name, d);
-        }
-
-        for (const sym of userStocks) {
-            const d = await fetchFinnhub(sym);
-            if (d) html += formatItem(sym, d);
-        }
-
-        move.innerHTML = html || "Updating Market Data...";
-        const now = new Date();
-        document.getElementById('update-time').innerText = `Last Update: ${now.toLocaleTimeString()}`;
-        
-        renderTags();
-        updateUI(false); 
+    async function fetchNews() {
+        try {
+            const res = await fetch(`https://finnhub.io/api/v1/news?category=merger&token=${FINNHUB_KEY}`);
+            const data = await res.json();
+            return data.slice(0, 10).map(item => item.headline);
+        } catch (e) { return ["Market news currently unavailable..."]; }
     }
 
-    function formatItem(label, d) {
+    async function refreshAll() {
+        // 1. Top Banner
+        let topHtml = '';
+        for (const item of macroList) {
+            const d = await fetchYahoo(item.sym);
+            if (d) topHtml += formatItem(item.name, d, true);
+        }
+        document.getElementById('macro-scroller').innerHTML = topHtml;
+
+        // 2. Mid Banner
+        let midHtml = '';
+        for (const sym of userStocks) {
+            const d = await fetchFinnhub(sym);
+            if (d) midHtml += formatItem(sym, d, false);
+        }
+        document.getElementById('portfolio-scroller').innerHTML = midHtml;
+
+        // 3. News Banner
+        const headlines = await fetchNews();
+        document.getElementById('news-scroller').innerHTML = headlines.map(h => `<span class="news-item">NEWS: ${h.toUpperCase()}</span>`).join('');
+
+        const now = new Date();
+        document.getElementById('update-time').innerText = `Last Update: ${now.toLocaleTimeString()}`;
+        renderTags();
+        updateUI(false);
+    }
+
+    function formatItem(label, d, isMacro) {
         const isUp = d.change >= 0;
-        const alertClass = Math.abs(d.percent) >= 2.0 ? 'alert' : '';
+        let alertClass = '';
+        if (Math.abs(d.percent) >= 3.0) {
+            if (label === 'GOLD') alertClass = 'alert-gold';
+            else if (label === 'SILVER') alertClass = 'alert-silver';
+            else alertClass = 'alert-macro';
+        } else if (!isMacro && Math.abs(d.percent) >= 2.0) {
+            alertClass = 'alert-macro';
+        }
+
+        const priceDisp = (label.includes('BITCOIN') || label.includes('ETHEREUM')) 
+            ? d.price.toLocaleString(undefined, {maximumFractionDigits: 0}) 
+            : d.price.toLocaleString(undefined, {minimumFractionDigits: 2});
+
         return `<span class="stock-item ${alertClass}">
-            ${label} $${d.price.toLocaleString(undefined,{minimumFractionDigits:2})} 
+            ${label} $${priceDisp} 
             <span class="${isUp?'up':'down'}">${isUp?'+':''}${d.change.toFixed(2)} (${isUp?'+':''}${d.percent.toFixed(2)}%)</span>
         </span>`;
     }
 
-    // Timer Logic
+    // Logic for UI and controls
     let hideTimeout;
     function resetTimer() {
         document.getElementById('controls').classList.remove('hidden');
@@ -136,81 +163,65 @@
         hideTimeout = setTimeout(() => document.getElementById('controls').classList.add('hidden'), 10000);
     }
     ['mousemove','click','touchstart'].forEach(e => window.addEventListener(e, resetTimer));
-    resetTimer();
-
-    function addStock() {
-        const val = document.getElementById('new-stock').value.toUpperCase().trim();
-        if (val && !userStocks.includes(val)) {
-            userStocks.push(val);
-            localStorage.setItem('stocks', JSON.stringify(userStocks));
-            refreshTicker();
-            document.getElementById('new-stock').value = '';
-        }
-    }
-    
-    function removeStock(s) {
-        userStocks = userStocks.filter(x => x !== s);
-        localStorage.setItem('stocks', JSON.stringify(userStocks));
-        refreshTicker();
-    }
-
-    function renderTags() {
-        document.getElementById('active-list').innerHTML = userStocks.map(s => `
-            <span style="background:var(--border); padding:5px 10px; margin:5px; border-radius:4px; display:inline-block;">
-                ${s} <b onclick="removeStock('${s}')" style="cursor:pointer;color:#ff4444;margin-left:5px">×</b>
-            </span>
-        `).join('');
-    }
-
-    function toggleBold() {
-        isBold = !isBold;
-        localStorage.setItem('tickerBold', isBold);
-        updateUI(true);
-    }
 
     function updateUI(shouldSave) {
-        const move = document.getElementById('ticker-move');
         const sizeInput = document.getElementById('f-size');
         const speedInput = document.getElementById('f-speed');
-        const boldBtn = document.getElementById('bold-btn');
-
         if (!shouldSave) {
-            sizeInput.value = localStorage.getItem('tickerFontSize') || '24';
-            speedInput.value = localStorage.getItem('tickerSpeed') || '35';
+            sizeInput.value = localStorage.getItem('tickerFontSize') || '22';
+            speedInput.value = localStorage.getItem('tickerSpeed') || '30';
         }
-
         const fSize = sizeInput.value + 'px';
-        const fSpeed = speedInput.value + 's';
         const fWeight = isBold ? 'bold' : 'normal';
 
-        // Apply to everything
-        move.style.fontSize = fSize;
-        move.style.animationDuration = fSpeed;
-        move.style.fontWeight = fWeight;
-        
-        if (isBold) boldBtn.classList.add('active');
-        else boldBtn.classList.remove('active');
-
-        document.querySelectorAll('.stock-item').forEach(el => {
-            el.style.fontSize = fSize;
-            el.style.fontWeight = fWeight;
+        document.querySelectorAll('.scroller').forEach(s => {
+            s.style.fontSize = fSize;
+            s.style.fontWeight = fWeight;
+            if (s.id === 'portfolio-scroller') s.style.animationDuration = speedInput.value + 's';
         });
 
+        document.getElementById('bold-btn').className = isBold ? 'toggle-btn active' : 'toggle-btn';
         if (shouldSave) {
             localStorage.setItem('tickerFontSize', sizeInput.value);
             localStorage.setItem('tickerSpeed', speedInput.value);
         }
     }
 
+    function addStock() {
+        const val = document.getElementById('new-stock').value.toUpperCase().trim();
+        if (val && !userStocks.includes(val)) {
+            userStocks.push(val);
+            localStorage.setItem('stocks', JSON.stringify(userStocks));
+            refreshAll();
+            document.getElementById('new-stock').value = '';
+        }
+    }
+
+    function removeStock(s) {
+        userStocks = userStocks.filter(x => x !== s);
+        localStorage.setItem('stocks', JSON.stringify(userStocks));
+        refreshAll();
+    }
+
+    function renderTags() {
+        document.getElementById('active-list').innerHTML = userStocks.map(s => `
+            <span style="background:var(--border); padding:5px 10px; margin:5px; border-radius:4px; display:inline-block;">
+                ${s} <b onclick="removeStock('${s}')" style="cursor:pointer;color:var(--down);margin-left:5px">×</b>
+            </span>
+        `).join('');
+    }
+
+    function toggleBold() { isBold = !isBold; localStorage.setItem('tickerBold', isBold); updateUI(true); }
     function toggleTheme() {
         const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.body.setAttribute('data-theme', t);
         localStorage.setItem('theme', t);
     }
-    
+
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-    setInterval(refreshTicker, 60000);
-    refreshTicker();
+    setInterval(refreshAll, 60000); // Global refresh once a minute
+    refreshAll();
+    resetTimer();
 </script>
 </body>
 </html>
