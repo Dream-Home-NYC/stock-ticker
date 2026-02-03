@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Stock Ticker</title>
+    <title>Stock Ticker Pro</title>
     <style>
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
@@ -18,27 +18,19 @@
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 30s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
-        /* Subtle Pulse Alert */
+        /* Pulse Alert */
         @keyframes subtle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .stock-item { margin-right: 60px; font-size: 22px; display: inline-block; vertical-align: middle; }
         .up { color: #22ab94; } .down { color: #f23645; }
         .price-alert { animation: subtle-pulse 4s infinite ease-in-out; color: #ff9800 !important; }
 
-        /* Controls Panel with Auto-Hide */
-        #controls { 
-            padding: 15px; 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            font-size: 14px; 
-            transition: opacity 0.5s ease-in-out;
-            opacity: 1;
-        }
+        /* Auto-Hide Panel */
+        #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; }
         .hidden { opacity: 0 !important; pointer-events: none; }
-
-        .card { background: var(--panel); padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .card { background: var(--panel); padding: 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-        button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; padding: 8px 15px; }
-        .stock-tag { display: inline-flex; justify-content: space-between; background: var(--border); padding: 5px 10px; border-radius: 4px; margin: 3px; font-size: 12px; }
+        button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
+        .stock-tag { display: inline-flex; background: var(--border); padding: 5px 10px; border-radius: 4px; margin: 3px; font-size: 12px; }
         .remove { color: #f23645; cursor: pointer; margin-left: 8px; font-weight: bold; }
     </style>
 </head>
@@ -47,11 +39,11 @@
 <div id="indices-header">
     <div class="tradingview-widget-container">
         <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+        <script type="text/javascript" src="https://widgets.tradingview-widget.com/external-embedding/embed-widget-ticker-tape.js" async>
         {
         "symbols": [
             {"proName": "FOREXCOM:SPX500", "title": "S&P 500"},
-            {"proName": "TVC:IXIC", "title": "Nasdaq Composite"},
+            {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq Comp"},
             {"proName": "FOREXCOM:DJI", "title": "Dow Jones"}
         ],
         "showSymbolLogo": false, "colorTheme": "dark", "isTransparent": true, "displayMode": "adaptive", "locale": "en"
@@ -61,107 +53,80 @@
 </div>
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Refreshing Portfolio...</div>
+    <div id="ticker-move">Connecting...</div>
 </div>
 
 <div id="controls">
     <div class="card">
-        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA)">
+        <input type="text" id="new-stock" placeholder="Symbol">
         <button onclick="addStock()">ADD</button>
         <label>Size: <input type="number" id="f-size" value="22" style="width:45px" oninput="updateUI()"></label>
         <label>Speed: <input type="number" id="f-speed" value="30" style="width:45px" oninput="updateUI()"></label>
         <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
     </div>
     <div id="active-list"></div>
-    <p style="color: #666; font-size: 10px;">Controls will hide after 10s of inactivity. Tap anywhere to show.</p>
 </div>
 
 <script>
     const API_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
-    let hideTimeout;
+    let hideTimer;
 
-    // Auto-Hide Logic
-    function resetHideTimer() {
-        const controls = document.getElementById('controls');
-        controls.classList.remove('hidden');
-        clearTimeout(hideTimeout);
-        hideTimeout = setTimeout(() => {
-            controls.classList.add('hidden');
-        }, 10000); // 10 seconds
+    function resetTimer() {
+        document.getElementById('controls').classList.remove('hidden');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => document.getElementById('controls').classList.add('hidden'), 10000);
     }
-
-    window.addEventListener('mousemove', resetHideTimer);
-    window.addEventListener('click', resetHideTimer);
-    window.addEventListener('touchstart', resetHideTimer);
-    resetHideTimer();
-
-    function toggleTheme() {
-        const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.body.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-    }
-    document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+    ['mousemove', 'touchstart', 'click'].forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
 
     async function fetchData(symbol) {
         try {
-            const resp = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
-            const data = await resp.json();
-            return data.c ? data : null;
-        } catch (e) { return null; }
+            const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
+            const d = await r.json();
+            return d.c ? d : null;
+        } catch { return null; }
     }
 
     async function refreshTicker() {
         const move = document.getElementById('ticker-move');
         let html = '';
-
-        for (let sym of userStocks) {
-            const data = await fetchData(sym);
-            if (data) {
-                const change = data.d.toFixed(2);
-                const percent = data.dp.toFixed(2);
-                const colorClass = data.d >= 0 ? 'up' : 'down';
-                const sign = data.d >= 0 ? '+' : '';
-                const alertClass = Math.abs(data.dp) >= 2.0 ? 'price-alert' : '';
-
-                html += `<span class="stock-item ${alertClass}">
-                            ${sym} <span style="color:var(--text)">$${data.c.toFixed(2)}</span> 
-                            <span class="${colorClass}">${sign}${change} (${sign}${percent}%)</span>
-                         </span>`;
+        for (let s of userStocks) {
+            const d = await fetchData(s);
+            if (d) {
+                const up = d.d >= 0;
+                html += `<span class="stock-item ${Math.abs(d.dp) >= 2.0 ? 'price-alert' : ''}">
+                    ${s} <span style="color:var(--text)">$${d.c.toFixed(2)}</span> 
+                    <span class="${up ? 'up' : 'down'}">${up ? '+' : ''}${d.d.toFixed(2)} (${up ? '+' : ''}${d.dp.toFixed(2)}%)</span>
+                </span>`;
             }
         }
-        move.innerHTML = html || "Add stocks to start your custom ticker";
-        renderList();
-    }
-
-    function addStock() {
-        const input = document.getElementById('new-stock');
-        const val = input.value.toUpperCase().trim();
-        if (val && !userStocks.includes(val)) {
-            userStocks.push(val);
-            localStorage.setItem('stocks', JSON.stringify(userStocks));
-            input.value = '';
-            refreshTicker();
-        }
-    }
-
-    function removeStock(sym) {
-        userStocks = userStocks.filter(s => s !== sym);
-        localStorage.setItem('stocks', JSON.stringify(userStocks));
-        refreshTicker();
-    }
-
-    function renderList() {
+        move.innerHTML = html;
         document.getElementById('active-list').innerHTML = userStocks.map(s => `
-            <div class="stock-tag"><span>${s}</span><span class="remove" onclick="removeStock('${s}')">×</span></div>
+            <div class="stock-tag">${s}<span class="remove" onclick="removeStock('${s}')">×</span></div>
         `).join('');
     }
 
-    function updateUI() {
-        const move = document.getElementById('ticker-move');
-        move.style.fontSize = document.getElementById('f-size').value + 'px';
-        move.style.animationDuration = document.getElementById('f-speed').value + 's';
+    function addStock() {
+        const i = document.getElementById('new-stock');
+        const v = i.value.toUpperCase().trim();
+        if (v && !userStocks.includes(v)) { userStocks.push(v); localStorage.setItem('stocks', JSON.stringify(userStocks)); i.value = ''; refreshTicker(); }
     }
+
+    function removeStock(s) { userStocks = userStocks.filter(x => x !== s); localStorage.setItem('stocks', JSON.stringify(userStocks)); refreshTicker(); }
+
+    function updateUI() {
+        const m = document.getElementById('ticker-move');
+        m.style.fontSize = document.getElementById('f-size').value + 'px';
+        m.style.animationDuration = document.getElementById('f-speed').value + 's';
+    }
+
+    function toggleTheme() {
+        const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', t);
+        localStorage.setItem('theme', t);
+    }
+    document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
     setInterval(refreshTicker, 60000);
     refreshTicker();
