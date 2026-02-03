@@ -28,7 +28,7 @@
 <body data-theme="dark">
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Loading Live Market Data...</div>
+    <div id="ticker-move">Loading Indices & Portfolio...</div>
 </div>
 
 <div id="controls">
@@ -45,22 +45,28 @@
 <script>
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA'];
-    
-    // Yahoo Symbols for Indices
-    const indices = { '^GSPC': 'S&P 500', '^IXIC': 'NASDAQ COMP', '^DJI': 'DOW JONES' };
+    const indices = { '^GSPC': 'S&P 500', '^IXIC': 'NASDAQ', '^DJI': 'DOW' };
+
+    // Proxy to bypass CORS restrictions
+    const PROXY_URL = 'https://api.allorigins.win/get?url=';
 
     async function fetchYahoo(symbol) {
         try {
-            // Using a public proxy for Yahoo Finance Chart API
-            const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
-            const data = await res.json();
+            const targetUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
+            const res = await fetch(`${PROXY_URL}${targetUrl}`);
+            const jsonWrapper = await res.json();
+            const data = JSON.parse(jsonWrapper.contents);
+            
             const meta = data.chart.result[0].meta;
             const price = meta.regularMarketPrice;
             const prevClose = meta.previousClose;
             const change = price - prevClose;
             const percent = (change / prevClose) * 100;
             return { price, change, percent };
-        } catch (e) { return null; }
+        } catch (e) { 
+            console.error("Yahoo Fetch Error:", e);
+            return null; 
+        }
     }
 
     async function fetchFinnhub(symbol) {
@@ -75,19 +81,19 @@
         const move = document.getElementById('ticker-move');
         let html = '';
 
-        // 1. Load Indices from Yahoo
+        // 1. Fetch Indices (Yahoo via Proxy)
         for (const [sym, name] of Object.entries(indices)) {
             const d = await fetchYahoo(sym);
             if (d) html += formatItem(name, d);
         }
 
-        // 2. Load User Stocks from Finnhub
+        // 2. Fetch Portfolio (Finnhub)
         for (const sym of userStocks) {
             const d = await fetchFinnhub(sym);
             if (d) html += formatItem(sym, d);
         }
 
-        move.innerHTML = html;
+        move.innerHTML = html || "Updating Market Data...";
         renderTags();
     }
 
@@ -100,14 +106,13 @@
         </span>`;
     }
 
-    // --- Control Logic ---
-    let hideTimer;
+    // --- Interaction Logic ---
+    let hideTimeout;
     function resetTimer() {
         document.getElementById('controls').classList.remove('hidden');
         clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => document.getElementById('controls').classList.add('hidden'), 10000);
     }
-    let hideTimeout;
     ['mousemove','click','touchstart'].forEach(e => window.addEventListener(e, resetTimer));
     resetTimer();
 
@@ -117,6 +122,7 @@
             userStocks.push(val);
             localStorage.setItem('stocks', JSON.stringify(userStocks));
             refreshTicker();
+            document.getElementById('new-stock').value = '';
         }
     }
     
@@ -128,7 +134,9 @@
 
     function renderTags() {
         document.getElementById('active-list').innerHTML = userStocks.map(s => `
-            <span style="background:#444; padding:5px; margin:5px; border-radius:4px;">${s} <b onclick="removeStock('${s}')" style="cursor:pointer;color:red">×</b></span>
+            <span style="background:var(--border); padding:5px 10px; margin:5px; border-radius:4px; display:inline-block;">
+                ${s} <b onclick="removeStock('${s}')" style="cursor:pointer;color:#ff4444;margin-left:5px">×</b>
+            </span>
         `).join('');
     }
 
@@ -145,7 +153,7 @@
     }
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
-    setInterval(refreshTicker, 60000);
+    setInterval(refreshTicker, 60000); // Auto-refresh once per minute
     refreshTicker();
     updateUI();
 </script>
