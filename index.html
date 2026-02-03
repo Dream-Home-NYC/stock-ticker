@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Real-Time Ticker</title>
+    <title>Pro Stock Ticker</title>
     <style>
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
         
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Indices Widget Container */
-        #indices-header { height: 40px; width: 100%; border-bottom: 1px solid var(--border); }
+        /* Indices Header Styling */
+        #indices-header { height: 40px; width: 100%; border-bottom: 1px solid var(--border); overflow: hidden; }
 
-        /* Ticker Styling */
+        /* Ticker Banner Styling */
         #ticker-wrap { width: 100%; background: var(--bg); padding: 12px 0; border-bottom: 2px solid var(--border); overflow: hidden; white-space: nowrap; }
         #ticker-move { display: inline-block; padding-left: 100%; animation: scroll 30s linear infinite; font-weight: bold; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         
-        /* Slow, Subtle Alert Animation */
+        /* Subtle Breathe Pulse Alert */
         @keyframes subtle-pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0%, 100% { opacity: 1; filter: brightness(1); }
+            50% { opacity: 0.6; filter: brightness(1.5); }
         }
 
         .stock-item { margin-right: 60px; font-size: 22px; display: inline-block; vertical-align: middle; }
         .up { color: #22ab94; } .down { color: #f23645; }
-        .price-alert { animation: subtle-pulse 3s infinite ease-in-out; color: #ff9800 !important; }
+        .price-alert { animation: subtle-pulse 3s infinite ease-in-out; border-bottom: 2px solid #ff9800; }
 
-        /* Settings Area */
+        /* Controls Panel */
         #controls { padding: 15px; flex-grow: 1; overflow-y: auto; font-size: 14px; }
         .card { background: var(--panel); padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); }
         input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); margin: 2px 0; }
         input[type="text"] { background: var(--bg); color: var(--text); width: 150px; }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
-        .settings-grid { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        .settings-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
         .stock-tag { display: inline-flex; justify-content: space-between; background: var(--border); padding: 5px 10px; border-radius: 4px; margin: 3px; font-size: 12px; }
         .remove { color: #f23645; cursor: pointer; margin-left: 8px; font-weight: bold; }
     </style>
@@ -49,7 +48,7 @@
         {
         "symbols": [
             {"proName": "FOREXCOM:SPX500", "title": "S&P 500"},
-            {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
+            {"proName": "NASDAQ:IXIC", "title": "Nasdaq Composite"},
             {"proName": "FOREXCOM:DJI", "title": "Dow Jones"}
         ],
         "showSymbolLogo": false, "colorTheme": "dark", "isTransparent": true, "displayMode": "adaptive", "locale": "en"
@@ -59,16 +58,16 @@
 </div>
 
 <div id="ticker-wrap">
-    <div id="ticker-move">Loading Stock Data...</div>
+    <div id="ticker-move">Refreshing Portfolio Data...</div>
 </div>
 
 <div id="controls">
-    <div class="card settings-grid">
-        <input type="text" id="new-stock" placeholder="Add (e.g. NVDA)">
-        <button onclick="addStock()">ADD STOCK</button>
+    <div class="card settings-row">
+        <input type="text" id="new-stock" placeholder="Symbol (e.g. NVDA)">
+        <button onclick="addStock()">ADD</button>
         <label>Size: <input type="number" id="f-size" value="22" style="width:50px" oninput="updateUI()"></label>
         <label>Speed: <input type="number" id="f-speed" value="30" style="width:50px" oninput="updateUI()"></label>
-        <button onclick="toggleTheme()" style="background:#555">🌓 Theme</button>
+        <button onclick="toggleTheme()" style="background:#444">🌓 Theme</button>
     </div>
     <div id="active-list"></div>
 </div>
@@ -105,7 +104,7 @@
                 const colorClass = isUp ? 'up' : 'down';
                 const sign = isUp ? '+' : '';
                 
-                // Slow pulse if move > 2%
+                // Alert if move > 2% (Subtle 3s pulse)
                 const alertClass = Math.abs(data.dp) >= 2.0 ? 'price-alert' : '';
 
                 html += `<span class="stock-item ${alertClass}">
