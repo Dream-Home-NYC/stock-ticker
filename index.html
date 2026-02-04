@@ -3,26 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evergreen Market Command Center</title>
+    <title>DreamHome Market Hub</title>
     <style>
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; --up: #00ff00; --down: #ff4444; --news: #00d4ff; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
         
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Ticker Sections */
-        .ticker-section { width: 100%; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--bg); cursor: pointer; position: relative; }
-        #top-banner { padding: 6px 0; border-bottom: 2px solid #444; }
-        #mid-banner { padding: 10px 0; border-bottom: 2px solid var(--border); display: flex; align-items: center; }
-        #news-banner { padding: 6px 0; background: #050505; border-bottom: 2px solid var(--news); }
+        .ticker-section { width: 100%; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--bg); cursor: pointer; display: flex; align-items: center; }
+        #top-banner { padding: 6px 0; border-bottom: 2px solid #444; height: 40px; }
+        #mid-banner { padding: 10px 0; border-bottom: 2px solid var(--border); height: 50px; }
+        #news-banner { padding: 6px 0; background: #050505; border-bottom: 2px solid var(--news); height: 40px; }
 
-        /* Clock & Status Overlay */
+        /* Pinned Status Bar (18px fixed) */
         #market-status-bar { 
             background: var(--bg); padding: 0 15px; height: 100%; display: flex; 
             align-items: center; gap: 12px; border-right: 2px solid var(--border);
-            z-index: 10; font-weight: bold; font-family: monospace; font-size: 13px;
+            z-index: 100; font-weight: bold; font-family: monospace; 
+            flex-shrink: 0; font-size: 18px;
         }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        #live-date { color: var(--up); }
+        #live-clock { color: var(--text); }
+        
+        /* Dynamic Status Colors */
+        .status-text-open { color: var(--up) !important; text-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+        .status-text-closed { color: var(--down) !important; text-shadow: 0 0 5px rgba(255, 68, 68, 0.3); }
+
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; }
         .open-dot { background: var(--up); box-shadow: 0 0 8px var(--up); }
         .closed-dot { background: var(--down); box-shadow: 0 0 8px var(--down); }
 
@@ -34,8 +41,13 @@
         .news-item { margin-right: 100px; color: var(--news); font-style: italic; display: inline-block; }
         .up { color: var(--up); } .down { color: var(--down); }
         
-        /* Controls */
-        #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; position: relative; }
+        /* Specialized Alerts */
+        @keyframes glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .alert-gold { color: #FFD700 !important; animation: glow 2s infinite; }
+        .alert-silver { color: #C0C0C0 !important; animation: glow 2s infinite; }
+        .alert-macro { color: #ff9800 !important; animation: glow 2s infinite; }
+
+        #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; }
         .hidden { opacity: 0 !important; pointer-events: none; }
         .card { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .control-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #aaa; }
@@ -45,26 +57,30 @@
 </head>
 <body data-theme="dark">
 
-<div id="top-banner" class="ticker-section"><div id="macro-scroller" class="scroller">Loading Markets...</div></div>
-
-<div id="mid-banner" class="ticker-section">
+<div id="top-banner" class="ticker-section">
     <div id="market-status-bar">
-        <span id="live-date" style="color:#aaa">--/--/----</span>
+        <span id="live-date">--/--/----</span>
         <span id="live-clock">00:00:00</span>
         <div id="status-indicator" class="status-dot closed-dot"></div>
-        <span id="status-text">CLOSED</span>
-        <button id="mute-toggle" onclick="toggleMute()" style="padding:2px 6px; font-size:10px; background:#444;">🔊</button>
+        <span id="status-text" class="status-text-closed">CLOSED</span>
+        <button id="mute-toggle" onclick="toggleMute()" style="padding:2px 6px; font-size:12px; background:#444;">🔊</button>
     </div>
-    <div id="portfolio-scroller" class="scroller">Syncing...</div>
+    <div id="macro-scroller" class="scroller">Loading Indices...</div>
 </div>
 
-<div id="news-banner" class="ticker-section"><div id="news-scroller" class="scroller">Fetching News...</div></div>
+<div id="mid-banner" class="ticker-section">
+    <div id="portfolio-scroller" class="scroller">Syncing Stocks...</div>
+</div>
+
+<div id="news-banner" class="ticker-section">
+    <div id="news-scroller" class="scroller">Fetching Business News...</div>
+</div>
 
 <div id="controls">
     <div class="card">
         <div class="control-group">SYMBOL <input type="text" id="new-stock" placeholder="e.g. NVDA" style="width:70px"></div>
         <button onclick="addStock()" style="margin-top:12px">ADD</button>
-        <div class="control-group">FONT <input type="number" id="f-size" value="22" style="width:40px" oninput="updateUI(true)"></div>
+        <div class="control-group">TICKER FONT <input type="number" id="f-size" value="22" style="width:40px" oninput="updateUI(true)"></div>
         <div class="control-group">MACRO <input type="number" id="speed-macro" value="50" style="width:40px" oninput="updateUI(true)"></div>
         <div class="control-group">STOCKS <input type="number" id="speed-stocks" value="30" style="width:40px" oninput="updateUI(true)"></div>
         <div class="control-group">NEWS <input type="number" id="speed-news" value="80" style="width:40px" oninput="updateUI(true)"></div>
@@ -85,52 +101,14 @@
     const bellOpen = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
     const bellClose = new Audio('https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg');
 
-    // --- Dynamic Holiday Engine ---
-    function getNthDay(year, month, dayOfWeek, n) {
-        let date = new Date(year, month, 1);
-        let count = 0;
-        while (date.getMonth() === month) {
-            if (date.getDay() === dayOfWeek) {
-                count++;
-                if (count === n) return date;
-            }
-            date.setDate(date.getDate() + 1);
-        }
-        return null;
-    }
+    // [Dynamic Holiday Engine]
+    function getNthDay(y, m, dw, n) { let d = new Date(y, m, 1), c = 0; while (d.getMonth() === m) { if (d.getDay() === dw) { c++; if (c === n) return d; } d.setDate(d.getDate() + 1); } return null; }
+    function getLastMonday(y, m) { let d = new Date(y, m + 1, 0); while (d.getDay() !== 1) d.setDate(d.getDate() - 1); return d; }
+    function getEaster(y) { const f = Math.floor, G = y % 19, C = f(y / 100), H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30, I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)), J = (y + f(y / 4) + I + 2 - C + f(C / 4)) % 7, L = I - J, mo = 3 + f((L + 40) / 44), d = L + 28 - 31 * f(mo / 4); return new Date(y, mo - 1, d); }
 
-    function getLastMonday(year, month) {
-        let date = new Date(year, month + 1, 0);
-        while (date.getDay() !== 1) date.setDate(date.getDate() - 1);
-        return date;
-    }
-
-    function getEaster(year) {
-        const f = Math.floor, G = year % 19, C = f(year / 100), H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
-              I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)), J = (year + f(year / 4) + I + 2 - C + f(C / 4)) % 7,
-              L = I - J, month = 3 + f((L + 40) / 44), day = L + 28 - 31 * f(month / 4);
-        return new Date(year, month - 1, day);
-    }
-
-    function getNYSEHolidays(year) {
-        let holidays = [
-            new Date(year, 0, 1), // New Year
-            getNthDay(year, 0, 1, 3), // MLK
-            getNthDay(year, 1, 1, 3), // Presidents
-            new Date(getEaster(year).setDate(getEaster(year).getDate() - 2)), // Good Friday
-            getLastMonday(year, 4), // Memorial
-            new Date(year, 5, 19), // Juneteenth
-            new Date(year, 6, 4), // July 4
-            getNthDay(year, 8, 1, 1), // Labor
-            getNthDay(year, 10, 4, 4), // Thanksgiving
-            new Date(year, 11, 25) // Christmas
-        ];
-        // Observed rules: if Sat -> Fri, if Sun -> Mon
-        return holidays.map(d => {
-            if (d.getDay() === 6) return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1).toDateString();
-            if (d.getDay() === 0) return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).toDateString();
-            return d.toDateString();
-        });
+    function getNYSEHolidays(y) {
+        let hols = [new Date(y, 0, 1), getNthDay(y, 0, 1, 3), getNthDay(y, 1, 1, 3), new Date(getEaster(y).setDate(getEaster(y).getDate() - 2)), getLastMonday(y, 4), new Date(y, 5, 19), new Date(y, 6, 4), getNthDay(y, 8, 1, 1), getNthDay(y, 10, 4, 4), new Date(y, 11, 25)];
+        return hols.map(d => { if (d.getDay() === 6) return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1).toDateString(); if (d.getDay() === 0) return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).toDateString(); return d.toDateString(); });
     }
 
     function updateClock() {
@@ -139,39 +117,33 @@
         const nyDate = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
         const timeParts = new Intl.DateTimeFormat('en-US', estOptions).formatToParts(now);
 
-        const h = parseInt(timeParts.find(p => p.type === 'hour').value);
-        const m = parseInt(timeParts.find(p => p.type === 'minute').value);
-        const s = parseInt(timeParts.find(p => p.type === 'second').value);
-        
+        const h = parseInt(timeParts.find(p => p.type === 'hour').value), m = parseInt(timeParts.find(p => p.type === 'minute').value), s = parseInt(timeParts.find(p => p.type === 'second').value);
         document.getElementById('live-date').innerText = nyDate;
         document.getElementById('live-clock').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 
-        const year = now.getFullYear();
-        const holidayStrings = getNYSEHolidays(year);
-        const todayStr = new Date(nyDate).toDateString();
-        
-        const isHoliday = holidayStrings.includes(todayStr);
-        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-        const totalMin = (h * 60) + m;
-        
-        // Early Closes (Day after Thanksgiving & Xmas Eve)
-        const thanksgiving = getNthDay(year, 10, 4, 4);
-        const blackFridayStr = new Date(thanksgiving.setDate(thanksgiving.getDate() + 1)).toDateString();
-        const xmasEveStr = new Date(year, 11, 24).toDateString();
+        const year = now.getFullYear(), holidayStrings = getNYSEHolidays(year), todayStr = new Date(nyDate).toDateString();
+        const isHoliday = holidayStrings.includes(todayStr), isWeekend = now.getDay() === 0 || now.getDay() === 6, totalMin = (h * 60) + m;
+        const thanksgiving = getNthDay(year, 10, 4, 4), blackFridayStr = new Date(thanksgiving.setDate(thanksgiving.getDate() + 1)).toDateString(), xmasEveStr = new Date(year, 11, 24).toDateString();
         const isEarlyClose = (todayStr === blackFridayStr || todayStr === xmasEveStr);
 
-        let marketOpen = false;
-        let statusLabel = "MARKET CLOSED";
+        let marketOpen = false, statusLabel = "CLOSED";
         if (!isWeekend && !isHoliday) {
-            const closeTime = isEarlyClose ? 780 : 960; // 1pm vs 4pm
-            if (totalMin >= 570 && totalMin < closeTime) {
-                marketOpen = true;
-                statusLabel = isEarlyClose ? "OPEN (EARLY)" : "MARKET OPEN";
-            }
-        } else if (isHoliday) statusLabel = "CLOSED (HOLIDAY)";
+            const closeTime = isEarlyClose ? 780 : 960;
+            if (totalMin >= 570 && totalMin < closeTime) { marketOpen = true; statusLabel = isEarlyClose ? "OPEN (EARLY)" : "MARKET OPEN"; }
+        } else if (isHoliday) statusLabel = "HOLIDAY";
 
-        document.getElementById('status-indicator').className = `status-dot ${marketOpen ? 'open-dot' : 'closed-dot'}`;
-        document.getElementById('status-text').innerText = statusLabel;
+        const dot = document.getElementById('status-indicator');
+        const txt = document.getElementById('status-text');
+        
+        // Apply Dynamic Colors
+        if (marketOpen) {
+            dot.className = 'status-dot open-dot';
+            txt.className = 'status-text-open';
+        } else {
+            dot.className = 'status-dot closed-dot';
+            txt.className = 'status-text-closed';
+        }
+        txt.innerText = statusLabel;
 
         if (!isMuted) {
             if (marketOpen && lastMarketState === 'closed' && h === 9 && m === 30 && s === 0) bellOpen.play();
@@ -180,30 +152,10 @@
         lastMarketState = marketOpen ? 'open' : 'closed';
     }
 
-    // --- Data & UI Logic ---
-    const macroList = [
-        { sym: '^DJI', name: 'DOW' }, { sym: '^IXIC', name: 'NASDAQ' }, { sym: '^GSPC', name: 'S&P 500' },
-        { sym: 'GC=F', name: 'GOLD' }, { sym: 'SI=F', name: 'SILVER' }, { sym: 'CL=F', name: 'OIL' },
-        { sym: 'BTC-USD', name: 'BTC' }, { sym: 'ETH-USD', name: 'ETH' }
-    ];
-
-    async function fetchYahoo(symbol) {
-        try {
-            const res = await fetch(`${PROXY_URL}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`)}`);
-            const json = await res.json();
-            const d = JSON.parse(json.contents).chart.result[0].meta;
-            return { price: d.regularMarketPrice, change: d.regularMarketPrice - d.previousClose, percent: ((d.regularMarketPrice - d.previousClose) / d.previousClose) * 100 };
-        } catch (e) { return null; }
-    }
-
-    async function fetchFinnhub(symbol) {
-        try {
-            const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
-            const data = await res.json();
-            return data.c ? { price: data.c, change: data.d, percent: data.dp } : null;
-        } catch (e) { return null; }
-    }
-
+    // [Data Fetching & UI Controls remain the same]
+    const macroList = [{ sym: '^DJI', name: 'DOW' }, { sym: '^IXIC', name: 'NASDAQ' }, { sym: '^GSPC', name: 'S&P 500' }, { sym: 'GC=F', name: 'GOLD' }, { sym: 'SI=F', name: 'SILVER' }, { sym: 'CL=F', name: 'OIL' }, { sym: 'BTC-USD', name: 'BTC' }, { sym: 'ETH-USD', name: 'ETH' }];
+    async function fetchYahoo(symbol) { try { const res = await fetch(`${PROXY_URL}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`)}`); const json = await res.json(); const d = JSON.parse(json.contents).chart.result[0].meta; return { price: d.regularMarketPrice, change: d.regularMarketPrice - d.previousClose, percent: ((d.regularMarketPrice - d.previousClose) / d.previousClose) * 100 }; } catch (e) { return null; } }
+    async function fetchFinnhub(symbol) { try { const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`); const data = await res.json(); return data.c ? { price: data.c, change: data.d, percent: data.dp } : null; } catch (e) { return null; } }
     async function refreshAll() {
         let tH = ''; for (let i of macroList) { const d = await fetchYahoo(i.sym); if (d) tH += formatItem(i.name, d, true); }
         document.getElementById('macro-scroller').innerHTML = tH;
@@ -214,13 +166,11 @@
         document.getElementById('news-scroller').innerHTML = news.slice(0,10).map(h => `<span class="news-item">NEWS: ${h.headline.toUpperCase()}</span>`).join('');
         renderTags(); updateUI(false);
     }
-
     function formatItem(label, d, isMacro) {
         const isUp = d.change >= 0;
         let cls = (Math.abs(d.percent) >= 3.0) ? (label === 'GOLD' ? 'alert-gold' : (label === 'SILVER' ? 'alert-silver' : 'alert-macro')) : (!isMacro && Math.abs(d.percent) >= 2.0 ? 'alert-macro' : '');
         return `<span class="stock-item ${cls}">${label} $${d.price.toLocaleString(undefined, {minimumFractionDigits: 2})} <span class="${isUp?'up':'down'}">${isUp?'+':''}${d.change.toFixed(2)} (${isUp?'+':''}${d.percent.toFixed(2)}%)</span></span>`;
     }
-
     function updateUI(save) {
         const size = document.getElementById('f-size').value;
         document.querySelectorAll('.scroller').forEach(s => {
@@ -231,7 +181,6 @@
         });
         if (save) { localStorage.setItem('tickerFontSize', size); localStorage.setItem('speedMacro', document.getElementById('speed-macro').value); localStorage.setItem('speedStocks', document.getElementById('speed-stocks').value); localStorage.setItem('speedNews', document.getElementById('speed-news').value); }
     }
-
     function toggleMute() { isMuted = !isMuted; localStorage.setItem('tickerMuted', isMuted); document.getElementById('mute-toggle').innerText = isMuted ? '🔇' : '🔊'; }
     function toggleBold() { isBold = !isBold; localStorage.setItem('tickerBold', isBold); updateUI(true); }
     function toggleTheme() { const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
