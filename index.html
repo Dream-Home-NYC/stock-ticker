@@ -3,39 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DreamHome Market Command - Adaptive breathing</title>
+    <title>DreamHome Market Command - Breathing Edition</title>
     <style>
-        :root { 
-            --bg: #000; --panel: #1a1a1a; --border: #333; 
-            --up: #00ff00; --down: #ff4444; --news: #00d4ff; 
-            --emerald: #50fa7b; --crimson: #ff5555; 
-            --adaptiveText: #fff; /* White in Dark Mode */
-        }
+        :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; --up: #00ff00; --down: #ff4444; --news: #00d4ff; --emerald: #50fa7b; --crimson: #ff5555; }
+        [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
         
-        [data-theme="light"] { 
-            --bg: #fff; --panel: #f4f4f4; --border: #ccc; 
-            --adaptiveText: #000; /* Black in Light Mode */
-            --up: #008800; --down: #cc0000; 
-        }
-        
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--adaptiveText); overflow: hidden; height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
         .ticker-section { width: 100%; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--bg); cursor: pointer; display: flex; align-items: center; transition: background 0.5s ease; }
         #top-banner { padding: 6px 0; border-bottom: 2px solid #444; height: 40px; }
         #mid-banner { padding: 10px 0; border-bottom: 2px solid var(--border); height: 50px; }
-        #news-banner { padding: 6px 0; background: rgba(0,0,0,0.05); border-bottom: 2px solid var(--news); height: 40px; }
+        #news-banner { padding: 6px 0; background: #050505; border-bottom: 2px solid var(--news); height: 40px; }
 
-        /* Status Bar (18px fixed) */
+        /* Status Bar */
         #market-status-bar { 
             background: var(--bg); padding: 0 15px; height: 100%; display: flex; 
             align-items: center; gap: 10px; border-right: 2px solid var(--border);
             z-index: 100; font-weight: bold; font-family: monospace; flex-shrink: 0; font-size: 18px;
         }
         #live-date { color: var(--up); }
-        #live-clock { color: var(--adaptiveText); }
+        #live-clock { color: var(--text); }
         
-        /* Ticker Element Adaptive Overrides */
-        .white-text { color: var(--adaptiveText) !important; }
+        /* Ticker Element Overrides */
+        .white-text { color: var(--text) !important; }
         .up { color: var(--up); } 
         .down { color: var(--down); }
 
@@ -75,13 +65,13 @@
         
         .stock-item { margin-right: 60px; display: inline-block; vertical-align: middle; padding: 2px 8px; border-radius: 4px; }
         .news-item { margin-right: 100px; color: var(--news); font-style: italic; display: inline-block; }
-        .event-alert { color: #000; font-weight: 900; background: #f1fa8c; padding: 0 10px; border-radius: 4px; margin-right: 50px; display: inline-flex; align-items: center; border: 1px solid #333; }
+        .event-alert { color: #000; font-weight: 900; background: #f1fa8c; padding: 0 10px; border-radius: 4px; margin-right: 50px; display: inline-flex; align-items: center; border: 1px solid #fff; }
         
         /* Controls */
         #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; }
         .card { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        .control-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #888; }
-        input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--adaptiveText); }
+        .control-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #aaa; }
+        input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
         .status-dot { width: 12px; height: 12px; border-radius: 50%; }
         .open-dot { background: var(--up); }
@@ -97,12 +87,12 @@
         <div id="status-indicator" class="status-dot closed-dot"></div>
         <span id="status-text">CLOSED</span>
         <span id="countdown-wrap" style="margin-left:5px">
-            <span id="cd-text" style="color:var(--news)"></span> 
-            <span id="cd-time" style="color:var(--up)"></span>
+            <span id="cd-text" class="cd-label" style="color:var(--news)"></span> 
+            <span id="cd-time" class="cd-timer" style="color:var(--up)"></span>
         </span>
         <button id="mute-toggle" onclick="toggleMute()" style="padding:2px 6px; font-size:12px; background:#444; border:none; cursor:pointer;">🔊</button>
     </div>
-    <div id="macro-scroller" class="scroller">Syncing Indices...</div>
+    <div id="macro-scroller" class="scroller">Loading Indices...</div>
 </div>
 
 <div id="mid-banner" class="ticker-section"><div id="portfolio-scroller" class="scroller">Syncing Stocks...</div></div>
@@ -110,13 +100,16 @@
 
 <div id="controls">
     <div class="card">
-        <div class="control-group">SYMBOL <input type="text" id="new-stock" placeholder="Symbol" style="width:70px"></div>
-        <button onclick="addStock()">ADD</button>
+        <div class="control-group">SYMBOL <input type="text" id="new-stock" placeholder="e.g. NVDA" style="width:70px"></div>
+        <button onclick="addStock()" style="margin-top:12px">ADD</button>
         <div class="control-group">FONT <input type="number" id="f-size" value="22" style="width:40px" oninput="updateUI(true)"></div>
+        <div class="control-group">MACRO <input type="number" id="speed-macro" value="50" style="width:40px" oninput="updateUI(true)"></div>
+        <div class="control-group">STOCKS <input type="number" id="speed-stocks" value="30" style="width:40px" oninput="updateUI(true)"></div>
+        <div class="control-group">NEWS <input type="number" id="speed-news" value="80" style="width:40px" oninput="updateUI(true)"></div>
         <div style="display: flex; align-items: center; gap: 10px; margin-top:12px;">
             <button id="bold-btn" class="toggle-btn" onclick="toggleBold()">BOLD</button>
             <button onclick="toggleTheme()" style="background:#555">🌓 THEME</button>
-            <span id="last-sync" style="font-size:11px; font-family: monospace;">Sync: --:--:--</span>
+            <span id="last-sync" style="font-size:11px; color:#888; font-family: monospace;">Sync: --:--:--</span>
         </div>
     </div>
     <div id="active-list" style="margin-top:10px"></div>
@@ -125,16 +118,12 @@
 <script>
     const FINNHUB_KEY = 'd60f5u1r01qto1rctdkgd60f5u1r01qto1rctdl0';
     const PROXY_URL = 'https://api.allorigins.win/get?url=';
-    let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA', 'VNQ', 'O'];
+    let userStocks = JSON.parse(localStorage.getItem('stocks')) || ['NVDA', 'AAPL', 'TSLA', 'AMD'];
     let isBold = localStorage.getItem('tickerBold') === 'true', isMuted = localStorage.getItem('tickerMuted') === 'true', lastMarketState = null;
 
     const bellOpen = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'), bellClose = new Audio('https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg');
 
-    function getNthDay(y, m, dw, n) { let d = new Date(y, m, 1), c = 0; while (d.getMonth() === m) { if (d.getDay() === dw) { c++; if (c === n) return d; } d.setDate(d.getDate() + 1); } return null; }
-    function getLastMonday(y, m) { let d = new Date(y, m + 1, 0); while (d.getDay() !== 1) d.setDate(d.getDate() - 1); return d; }
-    function isNYSEHoliday(date) { const y = date.getFullYear(), dStr = date.toDateString(); let hols = [new Date(y, 0, 1), getNthDay(y, 0, 1, 3), getNthDay(y, 1, 1, 3), new Date(getEaster(y).setDate(getEaster(y).getDate() - 2)), getLastMonday(y, 4), new Date(y, 5, 19), new Date(y, 6, 4), getNthDay(y, 8, 1, 1), getNthDay(y, 10, 4, 4), new Date(y, 11, 25)]; return hols.map(d => d.toDateString()).includes(dStr); }
-    function getEaster(y) { const f = Math.floor, G = y % 19, C = f(y / 100), H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30, I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)), J = (y + f(y / 4) + I + 2 - C + f(C / 4)) % 7, L = I - J, mo = 3 + f((L + 40) / 44), d = L + 28 - 31 * f(mo / 4); return new Date(y, mo - 1, d); }
-
+    // Economic Predictor
     function getNextEconEvent(now) {
         const year = now.getFullYear(), month = now.getMonth(), events = [];
         let fFri = new Date(year, month, 1); while(fFri.getDay() !== 5) fFri.setDate(fFri.getDate() + 1);
@@ -143,6 +132,12 @@
         events.push({ name: "CPI INFLATION", time: new Date(year, month, cDate.getDate(), 8, 30) });
         return events.filter(e => e.time > now).sort((a,b) => a.time - b.time)[0];
     }
+
+    // Holiday Engine
+    function getNthDay(y, m, dw, n) { let d = new Date(y, m, 1), c = 0; while (d.getMonth() === m) { if (d.getDay() === dw) { c++; if (c === n) return d; } d.setDate(d.getDate() + 1); } return null; }
+    function getLastMonday(y, m) { let d = new Date(y, m + 1, 0); while (d.getDay() !== 1) d.setDate(d.getDate() - 1); return d; }
+    function isNYSEHoliday(date) { const y = date.getFullYear(), dStr = date.toDateString(); let hols = [new Date(y, 0, 1), getNthDay(y, 0, 1, 3), getNthDay(y, 1, 1, 3), new Date(getEaster(y).setDate(getEaster(y).getDate() - 2)), getLastMonday(y, 4), new Date(y, 5, 19), new Date(y, 6, 4), getNthDay(y, 8, 1, 1), getNthDay(y, 10, 4, 4), new Date(y, 11, 25)]; return hols.map(d => d.toDateString()).includes(dStr); }
+    function getEaster(y) { const f = Math.floor, G = y % 19, C = f(y / 100), H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30, I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)), J = (y + f(y / 4) + I + 2 - C + f(C / 4)) % 7, L = I - J, mo = 3 + f((L + 40) / 44), d = L + 28 - 31 * f(mo / 4); return new Date(y, mo - 1, d); }
 
     function getNextMarketEvent(now) {
         let checkDate = new Date(now);
@@ -156,10 +151,12 @@
 
     function updateClock() {
         const now = new Date();
-        const est = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
-        document.getElementById('live-date').innerText = `${est.find(p => p.type === 'month').value}/${est.find(p => p.type === 'day').value}/${est.find(p => p.type === 'year').value}`;
-        document.getElementById('live-clock').innerText = `${est.find(p => p.type === 'hour').value}:${est.find(p => p.type === 'minute').value}:${est.find(p => p.type === 'second').value}`;
-        
+        const estOptions = { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' };
+        const nyParts = new Intl.DateTimeFormat('en-US', estOptions).formatToParts(now);
+        const h = nyParts.find(p => p.type === 'hour').value, m = nyParts.find(p => p.type === 'minute').value, s = nyParts.find(p => p.type === 'second').value;
+        document.getElementById('live-date').innerText = `${nyParts.find(p => p.type === 'month').value}/${nyParts.find(p => p.type === 'day').value}/${nyParts.find(p => p.type === 'year').value}`;
+        document.getElementById('live-clock').innerText = `${h}:${m}:${s}`;
+
         const event = getNextMarketEvent(now), diff = Math.floor((event.time - now) / 1000);
         const open = event.type === 'close';
         document.getElementById('status-indicator').className = `status-dot ${open ? 'open-dot' : 'closed-dot'}`;
@@ -181,66 +178,109 @@
         }
     }
 
-    const macroList = [{ sym: '^DJI', name: 'DOW' }, { sym: '^IXIC', name: 'NASDAQ' }, { sym: '^GSPC', name: 'S&P' }, { sym: 'BTC-USD', name: 'BTC' }];
+    const macroList = [{ sym: '^DJI', name: 'DOW' }, { sym: '^IXIC', name: 'NASDAQ' }, { sym: '^GSPC', name: 'S&P 500' }, { sym: 'GC=F', name: 'GOLD' }, { sym: 'SI=F', name: 'SILVER' }, { sym: 'CL=F', name: 'OIL' }, { sym: 'BTC-USD', name: 'BTC' }, { sym: 'ETH-USD', name: 'ETH' }];
     
     async function refreshAll() {
-        let tH = ''; for (let i of macroList) { const d = await fetchYahoo(i.sym); if (d) tH += formatItem(i.name, d, true); }
+        let tH = ''; 
+        for (let i of macroList) { 
+            const d = await fetchYahoo(i.sym); 
+            if (d) tH += formatItem(i.name, d, true); 
+        }
+        
         const rates = [{ n: '30-YR FIXED', r: 6.78, ch: -0.05 }, { n: '15-YR FIXED', r: 6.12, ch: 0.02 }];
-        rates.forEach(r => { tH += `<span class="stock-item"><span class="white-text">${r.n}:</span> <span class="${r.ch < 0 ? 'up' : 'down'}">${r.r}%</span></span>`; });
-        document.getElementById('macro-scroller').innerHTML = tH;
-        let mH = ''; for (let s of userStocks) { const d = await fetchFinnhub(s); if (d) mH += formatItem(s, d, false); }
-        document.getElementById('portfolio-scroller').innerHTML = mH;
+        rates.forEach(r => { tH += `<span class="stock-item"><span class="white-text">${r.n}:</span> <span class="${r.ch < 0 ? 'up' : 'down'}">${r.r}% (${r.ch < 0 ? '' : '+'}${r.ch})</span></span>`; });
+        
+        const vix = await fetchYahoo('^VIX');
+        if (vix) tH += `<span class="stock-item ${vix.price > 20 ? 'heat-crimson' : ''}"><span class="white-text">VIX:</span> ${vix.price.toFixed(2)}</span>`;
+        
+        if (tH) document.getElementById('macro-scroller').innerHTML = tH;
 
-        const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_KEY}`);
-        const news = await res.json();
-        let newsH = `<span id="event-bubble" class="event-alert" style="display:none"></span>`;
-        newsH += news.slice(0,10).map(h => `<span class="news-item">NEWS: ${h.headline.toUpperCase()}</span>`).join('');
-        document.getElementById('news-scroller').innerHTML = newsH;
-        document.getElementById('last-sync').innerText = `Sync: ${new Date().toLocaleTimeString()}`;
-        renderTags();
+        let mH = ''; 
+        for (let s of userStocks) { 
+            const d = await fetchFinnhub(s); 
+            if (d) mH += formatItem(s, d, false); 
+        }
+        if (mH) document.getElementById('portfolio-scroller').innerHTML = mH;
+
+        try {
+            const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_KEY}`);
+            const news = await res.json();
+            if (Array.isArray(news)) {
+                let newsH = `<span id="event-bubble" class="event-alert" style="display:none"></span>`;
+                newsH += news.slice(0,10).map(h => `<span class="news-item">NEWS: ${h.headline.toUpperCase()}</span>`).join('');
+                document.getElementById('news-scroller').innerHTML = newsH;
+            }
+        } catch (e) {
+            console.log("News fetch failed", e);
+        }
+        
+        document.getElementById('last-sync').innerText = `Sync: ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+        renderTags(); updateUI(false);
     }
 
     function formatItem(label, d, isMacro) {
         const isUp = d.change >= 0;
         const colorClass = isUp ? 'up' : 'down';
         let cls = "";
+        
         if (!isMacro) {
-            const abs = Math.abs(d.percent);
-            if (abs >= 5.0) cls = isUp ? "heat-emerald" : "heat-crimson";
-            else if (abs >= 3.5) cls = "breathing-fast";
-            else if (abs >= 2.0) cls = "breathing-slow";
+            if (Math.abs(d.percent) >= 5.0) cls = isUp ? "heat-emerald" : "heat-crimson";
+            else if (Math.abs(d.percent) >= 3.5) cls = "breathing-fast";
+            else if (Math.abs(d.percent) >= 2.0) cls = "breathing-slow";
         }
+        
         return `<span class="stock-item ${cls}">
             <span class="white-text">${label}</span> 
             <span class="white-text">$${d.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span> 
-            <span class="${colorClass}">${isUp?'+':''}${d.change.toFixed(2)} (${isUp?'+':''}${d.percent.toFixed(2)}%)</span>
+            <span class="price-chg ${colorClass}">${isUp?'+':''}${d.change.toFixed(2)}</span> 
+            <span class="perc-chg ${colorClass}">(${isUp?'+':''}${d.percent.toFixed(2)}%)</span>
         </span>`;
     }
 
     async function fetchYahoo(symbol) {
-        try { const res = await fetch(`${PROXY_URL}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`)}`); const json = await res.json(); const d = JSON.parse(json.contents).chart.result[0].meta; return { price: d.regularMarketPrice, change: d.regularMarketPrice - d.previousClose, percent: ((d.regularMarketPrice - d.previousClose) / d.previousClose) * 100 }; } catch (e) { return null; }
+        try { 
+            const res = await fetch(`${PROXY_URL}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`)}`); 
+            const json = await res.json(); 
+            const d = JSON.parse(json.contents).chart.result[0].meta; 
+            return { price: d.regularMarketPrice, change: d.regularMarketPrice - d.previousClose, percent: ((d.regularMarketPrice - d.previousClose) / d.previousClose) * 100 }; 
+        } catch (e) { 
+            return null; 
+        }
     }
     async function fetchFinnhub(symbol) {
-        try { const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`); const data = await res.json(); return data.c ? { price: data.c, change: data.d, percent: data.dp } : null; } catch (e) { return null; }
+        try { 
+            const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`); 
+            const data = await res.json(); 
+            return data.c ? { price: data.c, change: d = data.d, percent: data.dp } : null; 
+        } catch (e) { 
+            return null; 
+        }
     }
 
-    function toggleTheme() {
-        const body = document.body;
-        const current = body.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        body.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
+    function updateUI(save) {
+        const size = document.getElementById('f-size').value;
+        document.querySelectorAll('.scroller').forEach(s => {
+            s.style.fontSize = size + 'px'; s.style.fontWeight = isBold ? 'bold' : 'normal';
+            if (s.id === 'macro-scroller') s.style.animationDuration = document.getElementById('speed-macro').value + 's';
+            if (s.id === 'portfolio-scroller') s.style.animationDuration = document.getElementById('speed-stocks').value + 's';
+            if (s.id === 'news-scroller') s.style.animationDuration = document.getElementById('speed-news').value + 's';
+        });
+        document.getElementById('bold-btn').className = isBold ? 'toggle-btn active' : 'toggle-btn';
+        if (save) { localStorage.setItem('tickerFontSize', size); localStorage.setItem('speedMacro', document.getElementById('speed-macro').value); localStorage.setItem('speedStocks', document.getElementById('speed-stocks').value); localStorage.setItem('speedNews', document.getElementById('speed-news').value); }
     }
 
-    function toggleBold() { isBold = !isBold; localStorage.setItem('tickerBold', isBold); updateUI(); }
-    function addStock() { const v = document.getElementById('new-stock').value.toUpperCase().trim(); if (v && !userStocks.includes(v)) { userStocks.push(v); localStorage.setItem('stocks', JSON.stringify(userStocks)); refreshAll(); } }
+    function toggleTheme() { const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
+    function toggleMute() { isMuted = !isMuted; localStorage.setItem('tickerMuted', isMuted); document.getElementById('mute-toggle').innerText = isMuted ? '🔇' : '🔊'; }
+    function toggleBold() { isBold = !isBold; localStorage.setItem('tickerBold', isBold); updateUI(true); }
+    function addStock() { const v = document.getElementById('new-stock').value.toUpperCase().trim(); if (v && !userStocks.includes(v)) { userStocks.push(v); localStorage.setItem('stocks', JSON.stringify(userStocks)); refreshAll(); document.getElementById('new-stock').value = ''; } }
     function removeStock(s) { userStocks = userStocks.filter(x => x !== s); localStorage.setItem('stocks', JSON.stringify(userStocks)); refreshAll(); }
     function renderTags() { document.getElementById('active-list').innerHTML = userStocks.map(s => `<span style="background:var(--border); padding:5px 10px; margin:5px; border-radius:4px; display:inline-block;">${s} <b onclick="removeStock('${s}')" style="cursor:pointer;color:var(--down);margin-left:5px">×</b></span>`).join(''); }
-    function updateUI() { document.querySelectorAll('.scroller').forEach(s => s.style.fontWeight = isBold ? 'bold' : 'normal'); }
 
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
     setInterval(updateClock, 1000);
     setInterval(refreshAll, 60000);
+    // Initial load
+    updateClock();
     refreshAll();
 </script>
 </body>
