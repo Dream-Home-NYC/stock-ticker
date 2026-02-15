@@ -8,7 +8,7 @@
         :root { --bg: #000; --panel: #1a1a1a; --text: #fff; --border: #333; --up: #00ff00; --down: #ff4444; --news: #00d4ff; --emerald: #50fa7b; --crimson: #ff5555; }
         [data-theme="light"] { --bg: #fff; --panel: #f4f4f4; --text: #000; --border: #ccc; }
         
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
         .ticker-section { width: 100%; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--bg); cursor: pointer; display: flex; align-items: center; transition: background 0.5s ease; flex-shrink: 0; }
         #top-banner { padding: 6px 0; border-bottom: 2px solid #444; height: 40px; }
@@ -98,7 +98,7 @@
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
             padding-top: 15px;
             border-top: 1px solid var(--border);
             width: 100%;
@@ -111,6 +111,21 @@
             transition: transform 0.3s ease;
         }
         .app-logo:hover { transform: scale(1.05); }
+
+        .app-name {
+            font-size: 48px;
+            font-weight: 800;
+            font-family: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(to right, #afff9a, #008000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Removed text-transform: uppercase; to show mixed case */
+            letter-spacing: -2px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 10px rgba(0, 128, 0, 0.2));
+            white-space: pre;
+        }
+
         .tip-box {
             font-size: 13px;
             color: var(--text);
@@ -121,6 +136,7 @@
             border-left: 4px solid var(--news);
             max-width: 300px;
             line-height: 1.4;
+            margin-left: auto;
         }
     </style>
 </head>
@@ -175,6 +191,7 @@
         <!-- Brand and Tip Row -->
         <div class="brand-container">
             <img src="logo.jpg" alt="UpTick Logo" class="app-logo">
+            <div class="app-name"> UpTick</div>
             <div class="tip-box">
                 💡 <b>Tip:</b> Hover mouse over any banner to pause scrolling for closer inspection.
             </div>
