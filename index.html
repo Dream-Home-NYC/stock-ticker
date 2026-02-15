@@ -79,14 +79,49 @@
         .event-alert { color: #000; font-weight: 900; background: #f1fa8c; padding: 0 10px; border-radius: 4px; margin-right: 50px; display: inline-flex; align-items: center; border: 1px solid #fff; }
         
         #controls { padding: 15px; flex-grow: 1; transition: opacity 0.5s; opacity: 1; overflow-y: auto; }
-        .card { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .card { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 20px; }
+        
+        .control-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .control-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #aaa; }
+        
         input, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         button { cursor: pointer; font-weight: bold; background: #2962ff; color: #fff; border: none; }
+        button:hover { filter: brightness(1.2); }
+        
         .status-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .open-dot { background: var(--up); }
+        .open-dot { background: var(--up); box-shadow: 0 0 8px var(--up); }
         .closed-dot { background: var(--down); }
+        
         #fetch-status { font-size: 10px; color: #ffaa00; margin-left: 10px; display: none; }
+
+        /* Logo and Tip Styling */
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            width: 100%;
+        }
+        .app-logo {
+            height: 80px;
+            border-radius: 12px;
+            border: 2px solid #444;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            transition: transform 0.3s ease;
+        }
+        .app-logo:hover { transform: scale(1.05); }
+        .tip-box {
+            font-size: 13px;
+            color: var(--text);
+            opacity: 0.8;
+            background: rgba(255,255,255,0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--news);
+            max-width: 300px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -120,20 +155,33 @@
 
 <div id="controls">
     <div class="card">
-        <div class="control-group">SYMBOL <input type="text" id="new-stock" placeholder="e.g. NVDA" style="width:70px"></div>
-        <button onclick="addStock()" style="margin-top:12px">ADD</button>
-        <div class="control-group">FONT <input type="number" id="f-size" value="22" style="width:40px" oninput="updateUI(true)"></div>
-        <div class="control-group">MACRO <input type="number" id="speed-macro" value="50" style="width:40px" oninput="updateUI(true)"></div>
-        <div class="control-group">STOCKS <input type="number" id="speed-stocks" value="30" style="width:40px" oninput="updateUI(true)"></div>
-        <div class="control-group">NEWS <input type="number" id="speed-news" value="80" style="width:40px" oninput="updateUI(true)"></div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-top:12px;">
-            <button id="bold-btn" class="toggle-btn" onclick="toggleBold()">BOLD</button>
-            <button onclick="toggleTheme()" style="background:#555">🌓 THEME</button>
-            <span id="last-sync" style="font-size:11px; color:#888; font-family: monospace;">Sync: --:--:--</span>
-            <button onclick="refreshAll()" style="background:#444; font-size:10px">🔄 REFRESH</button>
+        <!-- Settings Row -->
+        <div class="control-row">
+            <div class="control-group">SYMBOL <input type="text" id="new-stock" placeholder="e.g. NVDA" style="width:70px"></div>
+            <button onclick="addStock()" style="margin-top:12px">ADD</button>
+            <div class="control-group">FONT <input type="number" id="f-size" value="22" style="width:40px" oninput="updateUI(true)"></div>
+            <div class="control-group">MACRO <input type="number" id="speed-macro" value="50" style="width:40px" oninput="updateUI(true)"></div>
+            <div class="control-group">STOCKS <input type="number" id="speed-stocks" value="30" style="width:40px" oninput="updateUI(true)"></div>
+            <div class="control-group">NEWS <input type="number" id="speed-news" value="80" style="width:40px" oninput="updateUI(true)"></div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-top:12px;">
+                <button id="bold-btn" class="toggle-btn" onclick="toggleBold()">BOLD</button>
+                <button onclick="toggleTheme()" style="background:#555">🌓 THEME</button>
+                <button onclick="refreshAll()" style="background:#444; font-size:10px">🔄 REFRESH</button>
+                <span id="last-sync" style="font-size:11px; color:#888; font-family: monospace;">Sync: --:--:--</span>
+            </div>
         </div>
+
+        <!-- Brand and Tip Row -->
+        <div class="brand-container">
+            <img src="logo.jpg" alt="UpTick Logo" class="app-logo">
+            <div class="tip-box">
+                💡 <b>Tip:</b> Hover mouse over any banner to pause scrolling for closer inspection.
+            </div>
+        </div>
+
+        <div id="active-list" style="margin-top:0px"></div>
     </div>
-    <div id="active-list" style="margin-top:10px"></div>
 </div>
 
 <script>
@@ -151,7 +199,7 @@
         window.hideTimer = setTimeout(() => {
             c.style.opacity = '0';
             c.style.pointerEvents = 'none';
-        }, 10000);
+        }, 15000);
     }
     ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => document.addEventListener(evt, resetInactivityTimer, {passive: true}));
     resetInactivityTimer();
@@ -198,7 +246,6 @@
     async function fetchYahoo(symbol) {
         const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d`;
         
-        // Try Proxy 1: CORSProxy.io (Fastest for financial)
         try {
             const res = await fetch(`${PROXY_CORSPROXY}${encodeURIComponent(targetUrl)}`);
             if (!res.ok) throw new Error();
@@ -210,7 +257,6 @@
                 percent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
             };
         } catch (e) {
-            // Try Proxy 2: AllOrigins
             try {
                 const res = await fetch(`${PROXY_ALLORIGINS}${encodeURIComponent(targetUrl)}`);
                 const json = await res.json();
@@ -222,7 +268,7 @@
                     percent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
                 };
             } catch (e2) {
-                console.error(`Failed to fetch ${symbol}`);
+                console.error(`Failed to sync ${symbol}`);
                 return null;
             }
         }
@@ -233,7 +279,6 @@
         statusEl.style.display = 'inline';
         statusEl.innerText = '📡 SYNCING...';
         
-        // 1. Macros
         let tH = ''; 
         for (let i of macroList) { 
             const d = await fetchYahoo(i.sym); 
@@ -241,7 +286,6 @@
         }
         if (tH) document.getElementById('macro-scroller').innerHTML = tH;
 
-        // 2. Portfolio
         let mH = ''; 
         for (let s of userStocks) { 
             const d = await fetchYahoo(s); 
@@ -249,7 +293,6 @@
         }
         if (mH) document.getElementById('portfolio-scroller').innerHTML = mH;
 
-        // 3. News
         try {
             const newsUrl = 'https://finance.yahoo.com/news/rssindex';
             const res = await fetch(`${PROXY_CORSPROXY}${encodeURIComponent(newsUrl)}`);
@@ -259,7 +302,7 @@
             let newsH = items.map(item => `<span class="news-item">NEWS: ${item.querySelector("title").textContent.toUpperCase()}</span>`).join('');
             if (newsH) document.getElementById('news-scroller').innerHTML = newsH;
         } catch (e) { 
-            console.log("News fetch failed"); 
+            console.log("News sync failed"); 
         }
         
         document.getElementById('last-sync').innerText = `Sync: ${new Date().toLocaleTimeString()}`;
@@ -344,7 +387,6 @@
         `).join(''); 
     }
 
-    // Init logic
     document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
     setInterval(updateClock, 1000);
     setInterval(refreshAll, 60000);
