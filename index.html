@@ -94,7 +94,7 @@
         
         #fetch-status { font-size: 10px; color: #ffaa00; margin-left: 10px; display: none; }
 
-        /* Logo and Tip Styling */
+        /* Brand Container Refined */
         .brand-container {
             display: flex;
             align-items: center;
@@ -112,6 +112,12 @@
         }
         .app-logo:hover { transform: scale(1.05); }
 
+        .brand-text-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
         .app-name {
             font-size: 48px;
             font-weight: 800;
@@ -119,11 +125,21 @@
             background: linear-gradient(to right, #afff9a, #008000);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            /* Removed text-transform: uppercase; to show mixed case */
             letter-spacing: -2px;
             line-height: 1;
             filter: drop-shadow(0 2px 10px rgba(0, 128, 0, 0.2));
             white-space: pre;
+        }
+
+        .app-subtitle {
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            margin-top: 8px; /* Increased from -2px to 8px for more space */
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .tip-box {
@@ -191,7 +207,10 @@
         <!-- Brand and Tip Row -->
         <div class="brand-container">
             <img src="logo.jpg" alt="UpTick Logo" class="app-logo">
-            <div class="app-name"> UpTick</div>
+            <div class="brand-text-wrapper">
+                <div class="app-name"> UpTick</div>
+                <div class="app-subtitle">Market Monitor V3.8</div>
+            </div>
             <div class="tip-box">
                 💡 <b>Tip:</b> Hover mouse over any banner to pause scrolling for closer inspection.
             </div>
